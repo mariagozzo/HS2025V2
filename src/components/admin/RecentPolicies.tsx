@@ -1,15 +1,25 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Search, ArrowDown, ArrowUp, Plus } from 'lucide-react';
+import { Edit, Trash2, Search, ArrowDown, ArrowUp, Plus, Eye } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { Policy } from '@/types/database';
 import { toast } from '@/components/ui/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import PolicyFormDialog from '@/components/admin/policies/PolicyFormDialog';
+import PolicyDetailsDialog from '@/components/admin/policies/PolicyDetailsDialog';
+import DeleteConfirmDialog from '@/components/admin/policies/DeleteConfirmDialog';
 
 const RecentPolicies = () => {
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editPolicy, setEditPolicy] = useState<Policy | null>(null);
+  const [viewPolicy, setViewPolicy] = useState<Policy | null>(null);
+  const [deletePolicy, setDeletePolicy] = useState<Policy | null>(null);
+
   // Fetch policies from Supabase
-  const { data: policies, isLoading, error } = useQuery({
+  const { data: policies, isLoading, error, refetch } = useQuery({
     queryKey: ['recentPolicies'],
     queryFn: async () => {
       const { data, error } = await (supabase
@@ -35,6 +45,33 @@ const RecentPolicies = () => {
       return data || [];
     }
   });
+
+  const handleCreateSuccess = () => {
+    refetch();
+    setCreateDialogOpen(false);
+    toast({
+      title: "Éxito",
+      description: "Póliza creada correctamente",
+    });
+  };
+
+  const handleEditSuccess = () => {
+    refetch();
+    setEditPolicy(null);
+    toast({
+      title: "Éxito",
+      description: "Póliza actualizada correctamente",
+    });
+  };
+
+  const handleDeleteSuccess = () => {
+    refetch();
+    setDeletePolicy(null);
+    toast({
+      title: "Éxito",
+      description: "Póliza eliminada correctamente",
+    });
+  };
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -93,7 +130,12 @@ const RecentPolicies = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Pólizas recientes</CardTitle>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="h-8 px-2 text-xs">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 px-2 text-xs"
+              onClick={() => setCreateDialogOpen(true)}
+            >
               <Plus className="h-3.5 w-3.5 mr-1" />
               Nueva póliza
             </Button>
@@ -145,15 +187,30 @@ const RecentPolicies = () => {
                       <td className="py-3 px-2 text-sm text-right">{formatCurrency(policy.premium_value)}</td>
                       <td className="py-3 px-2">
                         <div className="flex justify-center space-x-1">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Search className="h-4 w-4 text-gray-500" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => setViewPolicy(policy)}
+                          >
+                            <Eye className="h-4 w-4 text-gray-500" />
                             <span className="sr-only">Ver</span>
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => setEditPolicy(policy)}
+                          >
                             <Edit className="h-4 w-4 text-gray-500" />
                             <span className="sr-only">Editar</span>
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => setDeletePolicy(policy)}
+                          >
                             <Trash2 className="h-4 w-4 text-gray-500" />
                             <span className="sr-only">Eliminar</span>
                           </Button>
@@ -173,6 +230,39 @@ const RecentPolicies = () => {
           </div>
         )}
       </CardContent>
+
+      {/* Dialogs for CRUD operations */}
+      <PolicyFormDialog 
+        open={createDialogOpen} 
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      {editPolicy && (
+        <PolicyFormDialog 
+          open={!!editPolicy} 
+          onOpenChange={() => setEditPolicy(null)}
+          policy={editPolicy}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {viewPolicy && (
+        <PolicyDetailsDialog
+          open={!!viewPolicy}
+          onOpenChange={() => setViewPolicy(null)}
+          policy={viewPolicy}
+        />
+      )}
+
+      {deletePolicy && (
+        <DeleteConfirmDialog
+          open={!!deletePolicy}
+          onOpenChange={() => setDeletePolicy(null)}
+          policy={deletePolicy}
+          onSuccess={handleDeleteSuccess}
+        />
+      )}
     </Card>
   );
 };
