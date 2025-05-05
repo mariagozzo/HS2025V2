@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Search, ArrowDown, ArrowUp, Plus, Eye } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
+import { fromTable } from "@/integrations/supabase/client";
 import { Policy } from '@/types/database';
 import { toast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,8 +22,7 @@ const RecentPolicies = () => {
   const { data: policies, isLoading, error, refetch } = useQuery({
     queryKey: ['recentPolicies'],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from('policies') as any)
+      const { data, error } = await (fromTable('policies') as any)
         .select(`
           *,
           clients(first_name, last_name),
@@ -236,6 +235,7 @@ const RecentPolicies = () => {
         open={createDialogOpen} 
         onOpenChange={setCreateDialogOpen}
         onSuccess={handleCreateSuccess}
+        policy={null} // Valor explícito para solucionar el error de TypeScript
       />
 
       {editPolicy && (

@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
+import { countRecords, fromTable } from "@/integrations/supabase/client";
 import { Policy, Task, Claim, Payment, Client } from '@/types/database';
 
 const DashboardStats = () => {
@@ -11,31 +10,16 @@ const DashboardStats = () => {
     queryKey: ['policyCounts'],
     queryFn: async () => {
       // Use type assertion with any to bypass TypeScript errors
-      const { count: quotations } = await (supabase
-        .from('policies') as any)
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'Cotización');
-      
-      const { count: inProcess } = await (supabase
-        .from('policies') as any)
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'En expedición');
-      
-      const { count: toRenew } = await (supabase
-        .from('policies') as any)
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'Por renovar');
-      
-      const { count: expired } = await (supabase
-        .from('policies') as any)
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'Vencida');
+      const quotations = await countRecords('policies', {column: 'status', value: 'Cotización'});
+      const inProcess = await countRecords('policies', {column: 'status', value: 'En expedición'});
+      const toRenew = await countRecords('policies', {column: 'status', value: 'Por renovar'});
+      const expired = await countRecords('policies', {column: 'status', value: 'Vencida'});
       
       return {
-        quotations: quotations || 0,
-        inProcess: inProcess || 0,
-        toRenew: toRenew || 0,
-        expired: expired || 0
+        quotations,
+        inProcess,
+        toRenew,
+        expired
       };
     }
   });
@@ -48,26 +32,22 @@ const DashboardStats = () => {
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
       const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
       
-      const { count: overdue } = await (supabase
-        .from('tasks') as any)
+      const { count: overdue } = await (fromTable('tasks') as any)
         .select('*', { count: 'exact', head: true })
         .lt('due_date', today)
         .eq('status', 'pending');
       
-      const { count: todayTasks } = await (supabase
-        .from('tasks') as any)
+      const { count: todayTasks } = await (fromTable('tasks') as any)
         .select('*', { count: 'exact', head: true })
         .eq('due_date', today)
         .eq('status', 'pending');
       
-      const { count: tomorrowTasks } = await (supabase
-        .from('tasks') as any)
+      const { count: tomorrowTasks } = await (fromTable('tasks') as any)
         .select('*', { count: 'exact', head: true })
         .eq('due_date', tomorrow)
         .eq('status', 'pending');
       
-      const { count: upcomingTasks } = await (supabase
-        .from('tasks') as any)
+      const { count: upcomingTasks } = await (fromTable('tasks') as any)
         .select('*', { count: 'exact', head: true })
         .gt('due_date', tomorrow)
         .lte('due_date', nextWeek)
@@ -86,13 +66,11 @@ const DashboardStats = () => {
   const { data: clientStats, isLoading: isLoadingClients } = useQuery({
     queryKey: ['clientStats'],
     queryFn: async () => {
-      const { count: totalClients } = await (supabase
-        .from('clients') as any)
+      const { count: totalClients } = await (fromTable('clients') as any)
         .select('*', { count: 'exact', head: true });
       
       // For active clients, we need to check which clients have active policies
-      const { data: activePolicies } = await (supabase
-        .from('policies') as any)
+      const { data: activePolicies } = await (fromTable('policies') as any)
         .select('client_id')
         .not('status', 'eq', 'Vencida');
       
@@ -118,8 +96,7 @@ const DashboardStats = () => {
   const { data: pendingClaimsCount, isLoading: isLoadingClaims } = useQuery({
     queryKey: ['pendingClaims'],
     queryFn: async () => {
-      const { count } = await (supabase
-        .from('claims') as any)
+      const { count } = await (fromTable('claims') as any)
         .select('*', { count: 'exact', head: true })
         .in('status', ['Pendiente', 'En proceso']);
       
@@ -134,8 +111,7 @@ const DashboardStats = () => {
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       
-      const { data } = await (supabase
-        .from('payments') as any)
+      const { data } = await (fromTable('payments') as any)
         .select('amount')
         .lt('due_date', ninetyDaysAgo.toISOString().split('T')[0])
         .eq('status', 'Pendiente');
@@ -159,8 +135,7 @@ const DashboardStats = () => {
       const next5DaysMMDD = (next5Days.getMonth() + 1).toString().padStart(2, '0') + '-' + 
                             next5Days.getDate().toString().padStart(2, '0');
       
-      const { data } = await (supabase
-        .from('clients') as any)
+      const { data } = await (fromTable('clients') as any)
         .select('id, first_name, last_name, birthdate')
         .not('birthdate', 'is', null);
       

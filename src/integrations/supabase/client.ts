@@ -11,7 +11,32 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Solución temporal: función helper modificada para evitar errores de tipo
+// SOLUCIÓN TEMPORAL: Funciones helper para evitar errores de tipo
 export const fromTable = <T extends object>(tableName: string) => {
   return supabase.from(tableName) as any;
+};
+
+// Helper para consultas de tablas específicas
+export const fromPolicies = () => fromTable('policies');
+export const fromClients = () => fromTable('clients');
+export const fromTasks = () => fromTable('tasks');
+export const fromPayments = () => fromTable('payments');
+export const fromClaims = () => fromTable('claims');
+export const fromInvoices = () => fromTable('invoices');
+export const fromInsuranceCompanies = () => fromTable('insurance_companies');
+export const fromInsuranceBranches = () => fromTable('insurance_branches');
+export const fromUsersProfiles = () => fromTable('users_profiles');
+
+// Funciones auxiliares para operaciones comunes
+export const countRecords = async (tableName: string, condition?: {column: string, value: any}) => {
+  let query = fromTable(tableName).select('*', { count: 'exact', head: true });
+  
+  if (condition) {
+    query = query.eq(condition.column, condition.value);
+  }
+  
+  const { count, error } = await query;
+  
+  if (error) throw error;
+  return count || 0;
 };
