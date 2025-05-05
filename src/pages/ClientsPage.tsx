@@ -4,35 +4,35 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import CrudLayout from '@/components/common/crud/CrudLayout';
-import PoliciesList from '@/components/admin/policies/PoliciesList';
-import PolicyFormDialog from '@/components/admin/policies/PolicyFormDialog';
-import { Policy } from '@/types/database';
+import ClientsList from '@/components/admin/clients/ClientsList';
+import ClientFormDialog from '@/components/admin/clients/ClientFormDialog';
+import { Client } from '@/types/database';
 import { fromTable } from '@/integrations/supabase/client';
 
-const PoliciesPage = () => {
+const ClientsPage = () => {
   const [formOpen, setFormOpen] = useState(false);
-  const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   
-  const { data: policies, refetch } = useQuery({
-    queryKey: ['policies'],
+  const { data: clients, refetch } = useQuery({
+    queryKey: ['clients'],
     queryFn: async () => {
-      const { data, error } = await fromTable<Policy>('policies')
+      const { data, error } = await fromTable<Client>('clients')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('last_name', { ascending: true });
       
       if (error) throw error;
       return data || [];
     }
   });
   
-  const handleEditPolicy = (policy: Policy) => {
-    setEditingPolicy(policy);
+  const handleEditClient = (client: Client) => {
+    setEditingClient(client);
     setFormOpen(true);
   };
   
   const handleFormClose = () => {
     setFormOpen(false);
-    setEditingPolicy(null);
+    setEditingClient(null);
   };
   
   const handleFormSuccess = () => {
@@ -42,30 +42,30 @@ const PoliciesPage = () => {
 
   return (
     <CrudLayout
-      title="Pólizas"
-      subtitle="Gestione todas las pólizas del sistema"
-      breadcrumbs={[{ text: 'Pólizas' }]}
+      title="Clientes"
+      subtitle="Gestione todos los clientes de su agencia"
+      breadcrumbs={[{ text: 'Clientes' }]}
       actions={
         <Button onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Nueva Póliza
+          Nuevo Cliente
         </Button>
       }
     >
-      <PoliciesList 
-        policies={policies || []} 
-        onEdit={handleEditPolicy} 
+      <ClientsList 
+        clients={clients || []} 
+        onEdit={handleEditClient} 
         onDelete={() => refetch()}
       />
       
-      <PolicyFormDialog
+      <ClientFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
-        policy={editingPolicy}
+        client={editingClient}
         onSuccess={handleFormSuccess}
       />
     </CrudLayout>
   );
 };
 
-export default PoliciesPage;
+export default ClientsPage;
