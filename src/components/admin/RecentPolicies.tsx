@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +12,8 @@ const RecentPolicies = () => {
   const { data: policies, isLoading, error } = useQuery({
     queryKey: ['recentPolicies'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('policies')
+      const { data, error } = await (supabase
+        .from('policies') as any)
         .select(`
           *,
           clients(first_name, last_name),

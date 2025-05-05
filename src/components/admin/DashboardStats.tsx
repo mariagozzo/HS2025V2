@@ -10,24 +10,24 @@ const DashboardStats = () => {
   const { data: policyCounts, isLoading: isLoadingPolicies } = useQuery({
     queryKey: ['policyCounts'],
     queryFn: async () => {
-      // We use any type here since the Supabase types don't match our database
-      const { count: quotations } = await supabase
-        .from('policies')
+      // Use type assertion with any to bypass TypeScript errors
+      const { count: quotations } = await (supabase
+        .from('policies') as any)
         .select('*', { count: 'exact', head: true })
         .eq('status', 'Cotización');
       
-      const { count: inProcess } = await supabase
-        .from('policies')
+      const { count: inProcess } = await (supabase
+        .from('policies') as any)
         .select('*', { count: 'exact', head: true })
         .eq('status', 'En expedición');
       
-      const { count: toRenew } = await supabase
-        .from('policies')
+      const { count: toRenew } = await (supabase
+        .from('policies') as any)
         .select('*', { count: 'exact', head: true })
         .eq('status', 'Por renovar');
       
-      const { count: expired } = await supabase
-        .from('policies')
+      const { count: expired } = await (supabase
+        .from('policies') as any)
         .select('*', { count: 'exact', head: true })
         .eq('status', 'Vencida');
       
@@ -48,26 +48,26 @@ const DashboardStats = () => {
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
       const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
       
-      const { count: overdue } = await supabase
-        .from('tasks')
+      const { count: overdue } = await (supabase
+        .from('tasks') as any)
         .select('*', { count: 'exact', head: true })
         .lt('due_date', today)
         .eq('status', 'pending');
       
-      const { count: todayTasks } = await supabase
-        .from('tasks')
+      const { count: todayTasks } = await (supabase
+        .from('tasks') as any)
         .select('*', { count: 'exact', head: true })
         .eq('due_date', today)
         .eq('status', 'pending');
       
-      const { count: tomorrowTasks } = await supabase
-        .from('tasks')
+      const { count: tomorrowTasks } = await (supabase
+        .from('tasks') as any)
         .select('*', { count: 'exact', head: true })
         .eq('due_date', tomorrow)
         .eq('status', 'pending');
       
-      const { count: upcomingTasks } = await supabase
-        .from('tasks')
+      const { count: upcomingTasks } = await (supabase
+        .from('tasks') as any)
         .select('*', { count: 'exact', head: true })
         .gt('due_date', tomorrow)
         .lte('due_date', nextWeek)
@@ -86,22 +86,23 @@ const DashboardStats = () => {
   const { data: clientStats, isLoading: isLoadingClients } = useQuery({
     queryKey: ['clientStats'],
     queryFn: async () => {
-      const { count: totalClients } = await supabase
-        .from('clients')
+      const { count: totalClients } = await (supabase
+        .from('clients') as any)
         .select('*', { count: 'exact', head: true });
       
       // For active clients, we need to check which clients have active policies
-      // Since we can't directly use subqueries in RLS, we'll use a different approach
-      const { data: activePolicies } = await supabase
-        .from('policies')
+      const { data: activePolicies } = await (supabase
+        .from('policies') as any)
         .select('client_id')
         .not('status', 'eq', 'Vencida');
       
       // Get unique client IDs from active policies
       const activeClientIds = new Set();
-      activePolicies?.forEach(policy => {
-        if (policy.client_id) activeClientIds.add(policy.client_id);
-      });
+      if (activePolicies) {
+        activePolicies.forEach((policy: any) => {
+          if (policy.client_id) activeClientIds.add(policy.client_id);
+        });
+      }
       
       const activeClients = activeClientIds.size;
       
@@ -117,8 +118,8 @@ const DashboardStats = () => {
   const { data: pendingClaimsCount, isLoading: isLoadingClaims } = useQuery({
     queryKey: ['pendingClaims'],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('claims')
+      const { count } = await (supabase
+        .from('claims') as any)
         .select('*', { count: 'exact', head: true })
         .in('status', ['Pendiente', 'En proceso']);
       
@@ -133,13 +134,13 @@ const DashboardStats = () => {
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       
-      const { data } = await supabase
-        .from('payments')
+      const { data } = await (supabase
+        .from('payments') as any)
         .select('amount')
         .lt('due_date', ninetyDaysAgo.toISOString().split('T')[0])
         .eq('status', 'Pendiente');
       
-      return data?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+      return data ? data.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0) : 0;
     }
   });
 
@@ -158,15 +159,15 @@ const DashboardStats = () => {
       const next5DaysMMDD = (next5Days.getMonth() + 1).toString().padStart(2, '0') + '-' + 
                             next5Days.getDate().toString().padStart(2, '0');
       
-      const { data } = await supabase
-        .from('clients')
+      const { data } = await (supabase
+        .from('clients') as any)
         .select('id, first_name, last_name, birthdate')
         .not('birthdate', 'is', null);
       
       if (!data) return [];
       
       // Filter clients with birthdays in the next 5 days
-      return data.filter(client => {
+      return data.filter((client: any) => {
         if (!client.birthdate) return false;
         
         const birthdate = new Date(client.birthdate);
@@ -260,7 +261,7 @@ const DashboardStats = () => {
             <p className="text-gray-500">Cargando datos...</p>
           ) : upcomingBirthdays && upcomingBirthdays.length > 0 ? (
             <ul className="space-y-2">
-              {upcomingBirthdays.slice(0, 5).map((client) => (
+              {upcomingBirthdays.slice(0, 5).map((client: any) => (
                 <li key={client.id} className="border-b pb-2">
                   <p className="font-medium">{client.first_name} {client.last_name}</p>
                   <p className="text-sm text-gray-500">
