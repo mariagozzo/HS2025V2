@@ -266,4 +266,101 @@ const TasksList = () => {
   );
 };
 
+// Helper function implementations
+const getPriorityStyle = (priority: string) => {
+  switch (priority) {
+    case "alta":
+    case "Alta":
+      return "bg-red-100 text-red-800";
+    case "media":
+    case "Media":
+      return "bg-yellow-100 text-yellow-800";
+    case "baja":
+    case "Baja":
+      return "bg-blue-100 text-blue-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+};
+
+const getStatusStyle = (status: string) => {
+  switch (status) {
+    case "pending":
+    case "Pendiente":
+      return "text-blue-600";
+    case "atrasada":
+    case "Atrasada":
+      return "text-red-600";
+    case "completed":
+    case "Completada":
+      return "text-green-600";
+    default:
+      return "text-gray-600";
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case "pending":
+    case "Pendiente":
+      return <Clock className="h-4 w-4" />;
+    case "atrasada":
+    case "Atrasada":
+      return <AlertCircle className="h-4 w-4" />;
+    case "completed":
+    case "Completada":
+      return <CheckCircle className="h-4 w-4" />;
+    default:
+      return <Clock className="h-4 w-4" />;
+  }
+};
+
+const getTaskStatus = (task: any): string => {
+  if (task.status === 'completed') return 'Completada';
+  
+  if (task.due_date) {
+    const dueDate = new Date(task.due_date);
+    dueDate.setHours(23, 59, 59, 999); // End of the day
+    
+    if (dueDate < new Date()) {
+      return 'Atrasada';
+    }
+  }
+  
+  return 'Pendiente';
+};
+
+const formatDueDate = (dueDate: string | null): string => {
+  if (!dueDate) return 'Sin fecha';
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const taskDueDate = new Date(dueDate);
+  taskDueDate.setHours(0, 0, 0, 0);
+  
+  if (taskDueDate.getTime() === today.getTime()) {
+    return 'Hoy';
+  } else if (taskDueDate.getTime() === tomorrow.getTime()) {
+    return 'Mañana';
+  } else if (taskDueDate.getTime() === yesterday.getTime()) {
+    return 'Ayer';
+  } else if (taskDueDate < today) {
+    const diffTime = Math.abs(today.getTime() - taskDueDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `Vencida (${diffDays} días)`;
+  } else {
+    return new Date(dueDate).toLocaleDateString('es-ES', { 
+      day: 'numeric', 
+      month: 'short'
+    });
+  }
+};
+
 export default TasksList;

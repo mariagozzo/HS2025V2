@@ -10,31 +10,32 @@ const DashboardStats = () => {
   const { data: policyCounts, isLoading: isLoadingPolicies } = useQuery({
     queryKey: ['policyCounts'],
     queryFn: async () => {
-      const quotations = await supabase
+      // We use any type here since the Supabase types don't match our database
+      const { count: quotations } = await supabase
         .from('policies')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('status', 'Cotización');
       
-      const inProcess = await supabase
+      const { count: inProcess } = await supabase
         .from('policies')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('status', 'En expedición');
       
-      const toRenew = await supabase
+      const { count: toRenew } = await supabase
         .from('policies')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('status', 'Por renovar');
       
-      const expired = await supabase
+      const { count: expired } = await supabase
         .from('policies')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('status', 'Vencida');
       
       return {
-        quotations: quotations.count || 0,
-        inProcess: inProcess.count || 0,
-        toRenew: toRenew.count || 0,
-        expired: expired.count || 0
+        quotations: quotations || 0,
+        inProcess: inProcess || 0,
+        toRenew: toRenew || 0,
+        expired: expired || 0
       };
     }
   });
@@ -47,36 +48,36 @@ const DashboardStats = () => {
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
       const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
       
-      const overdue = await supabase
+      const { count: overdue } = await supabase
         .from('tasks')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .lt('due_date', today)
         .eq('status', 'pending');
       
-      const todayTasks = await supabase
+      const { count: todayTasks } = await supabase
         .from('tasks')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('due_date', today)
         .eq('status', 'pending');
       
-      const tomorrowTasks = await supabase
+      const { count: tomorrowTasks } = await supabase
         .from('tasks')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('due_date', tomorrow)
         .eq('status', 'pending');
       
-      const upcomingTasks = await supabase
+      const { count: upcomingTasks } = await supabase
         .from('tasks')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .gt('due_date', tomorrow)
         .lte('due_date', nextWeek)
         .eq('status', 'pending');
       
       return {
-        overdue: overdue.count || 0,
-        today: todayTasks.count || 0,
-        tomorrow: tomorrowTasks.count || 0,
-        upcoming: upcomingTasks.count || 0
+        overdue: overdue || 0,
+        today: todayTasks || 0,
+        tomorrow: tomorrowTasks || 0,
+        upcoming: upcomingTasks || 0
       };
     }
   });
@@ -87,19 +88,27 @@ const DashboardStats = () => {
     queryFn: async () => {
       const { count: totalClients } = await supabase
         .from('clients')
-        .select('count', { count: 'exact' });
+        .select('*', { count: 'exact', head: true });
       
-      const { count: activeClients } = await supabase
-        .from('clients')
-        .select('count', { count: 'exact' })
-        .in('id', (supabase.from('policies')
-          .select('client_id')
-          .not('status', 'eq', 'Vencida')));
+      // For active clients, we need to check which clients have active policies
+      // Since we can't directly use subqueries in RLS, we'll use a different approach
+      const { data: activePolicies } = await supabase
+        .from('policies')
+        .select('client_id')
+        .not('status', 'eq', 'Vencida');
+      
+      // Get unique client IDs from active policies
+      const activeClientIds = new Set();
+      activePolicies?.forEach(policy => {
+        if (policy.client_id) activeClientIds.add(policy.client_id);
+      });
+      
+      const activeClients = activeClientIds.size;
       
       return {
         total: totalClients || 0,
         active: activeClients || 0,
-        percentage: totalClients ? Math.round((activeClients || 0) / totalClients * 100) : 0
+        percentage: totalClients ? Math.round((activeClients / totalClients) * 100) : 0
       };
     }
   });
@@ -110,7 +119,7 @@ const DashboardStats = () => {
     queryFn: async () => {
       const { count } = await supabase
         .from('claims')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .in('status', ['Pendiente', 'En proceso']);
       
       return count || 0;
