@@ -15,7 +15,14 @@ import InvoicesPage from "./pages/InvoicesPage";
 import NotFound from "./pages/NotFound";
 
 // Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -34,6 +41,12 @@ const App = () => (
           <Route path="/siniestros" element={<ClaimsPage />} />
           <Route path="/tareas" element={<TasksPage />} />
           <Route path="/facturas" element={<InvoicesPage />} />
+          
+          {/* Rutas para compatibilidad */}
+          <Route path="/clientes/crm" element={<ClientsPage />} />
+          <Route path="/polizas/listado" element={<PoliciesPage />} />
+          <Route path="/entidades/clientes" element={<ClientsPage />} />
+          <Route path="/entidades/polizas" element={<PoliciesPage />} />
           
           {/* Submódulos - se pueden implementar posteriormente */}
           <Route path="/aseguradoras" element={<NotFound />} />

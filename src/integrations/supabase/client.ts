@@ -11,7 +11,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Exportar funciones auxiliares para trabajar con supabase de manera tipada
-export const fromTable = <T>(table: string) => {
-  return supabase.from(table) as any as ReturnType<typeof supabase.from<T>>;
+// Solución temporal: función helper modificada para evitar errores de tipo
+export const fromTable = <T extends object>(tableName: string) => {
+  return supabase.from(tableName) as any;
 };

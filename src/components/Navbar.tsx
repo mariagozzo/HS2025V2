@@ -17,8 +17,10 @@ const Navbar = () => {
           <Link to="/dashboard" className="text-gray-700 hover:text-hubseguros-600 font-medium">Dashboard</Link>
           <Link to="/clientes" className="text-gray-700 hover:text-hubseguros-600 font-medium">Clientes</Link>
           <Link to="/polizas" className="text-gray-700 hover:text-hubseguros-600 font-medium">Pólizas</Link>
+          <Link to="/pagos" className="text-gray-700 hover:text-hubseguros-600 font-medium">Pagos</Link>
           <Link to="/siniestros" className="text-gray-700 hover:text-hubseguros-600 font-medium">Siniestros</Link>
-          <Link to="/perfil" className="text-gray-700 hover:text-hubseguros-600 font-medium">Mi Perfil</Link>
+          <Link to="/tareas" className="text-gray-700 hover:text-hubseguros-600 font-medium">Tareas</Link>
+          <Link to="/facturas" className="text-gray-700 hover:text-hubseguros-600 font-medium">Facturas</Link>
         </nav>
         
         <div className="flex items-center space-x-4">
