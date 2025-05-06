@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fromPolicies } from '@/integrations/supabase/client';
 import { Policy } from '@/types/database';
 import { Loader2 } from 'lucide-react';
 
@@ -22,8 +21,7 @@ const PolicyDetailsDialog = ({
   const { data: policyDetails, isLoading } = useQuery({
     queryKey: ['policyDetail', policy.id],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from('policies') as any)
+      const { data, error } = await fromPolicies()
         .select(`
           *,
           clients(id, first_name, last_name, email, phone, address),

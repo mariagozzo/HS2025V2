@@ -3,7 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fromPolicies } from '@/integrations/supabase/client';
 import { Policy } from '@/types/database';
 import { toast } from '@/components/ui/use-toast';
 import { AlertCircle, Loader2 } from 'lucide-react';
@@ -23,8 +23,7 @@ const DeleteConfirmDialog = ({
 }: DeleteConfirmDialogProps) => {
   const mutation = useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase
-        .from('policies') as any)
+      const { error } = await fromPolicies()
         .delete()
         .eq('id', policy.id);
         
