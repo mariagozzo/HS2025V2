@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { fromTable, fromTasks, supabase } from "@/integrations/supabase/client";
+import { fromTasks, supabase } from "@/integrations/supabase/client";
 import { Task } from '@/types/database';
 import { toast } from '@/components/ui/use-toast';
 
@@ -13,7 +12,6 @@ const TasksList = () => {
   const { data: tasks, isLoading, error, refetch } = useQuery({
     queryKey: ['pendingTasks'],
     queryFn: async () => {
-      // Use the fromTasks helper instead of direct fromTable
       const { data, error } = await fromTasks()
         .select('*, users_profiles(full_name)')
         .eq('status', 'pending')
@@ -29,7 +27,6 @@ const TasksList = () => {
   });
 
   const completeTask = async (taskId: string) => {
-    // Use fromTasks helper instead
     const { error } = await fromTasks()
       .update({ status: 'completed', updated_at: new Date().toISOString() })
       .eq('id', taskId);
@@ -55,8 +52,7 @@ const TasksList = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    const { error } = await (supabase
-      .from('tasks') as any)
+    const { error } = await fromTasks()
       .update({ 
         due_date: tomorrow.toISOString().split('T')[0],
         updated_at: new Date().toISOString()

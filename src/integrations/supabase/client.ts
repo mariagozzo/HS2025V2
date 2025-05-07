@@ -12,21 +12,21 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Create an untyped client that can be used directly when types are not important
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// SOLUCIÓN TEMPORAL: Funciones helper para evitar errores de tipo
-export const fromTable = <T extends object>(tableName: string) => {
+// Helper function that works around type issues by using any
+export const fromTable = (tableName: string) => {
   return supabase.from(tableName) as any;
 };
 
-// Helper para consultas de tablas específicas
-export const fromPolicies = () => fromTable('policies');
-export const fromClients = () => fromTable('clients');
-export const fromTasks = () => fromTable('tasks');
-export const fromPayments = () => fromTable('payments');
-export const fromClaims = () => fromTable('claims');
-export const fromInvoices = () => fromTable('invoices');
-export const fromInsuranceCompanies = () => fromTable('insurance_companies');
-export const fromInsuranceBranches = () => fromTable('insurance_branches');
-export const fromUsersProfiles = () => fromTable('users_profiles');
+// Helper for specific tables with any type to overcome type checking issues
+export const fromPolicies = () => supabase.from('policies') as any;
+export const fromClients = () => supabase.from('clients') as any;
+export const fromTasks = () => supabase.from('tasks') as any;
+export const fromPayments = () => supabase.from('payments') as any;
+export const fromClaims = () => supabase.from('claims') as any;
+export const fromInvoices = () => supabase.from('invoices') as any;
+export const fromInsuranceCompanies = () => supabase.from('insurance_companies') as any;
+export const fromInsuranceBranches = () => supabase.from('insurance_branches') as any;
+export const fromUsersProfiles = () => supabase.from('users_profiles') as any;
 
 // Funciones auxiliares para operaciones comunes
 export const countRecords = async (tableName: string, condition?: {column: string, value: any}) => {
