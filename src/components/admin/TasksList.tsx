@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { fromTable, supabase } from "@/integrations/supabase/client";
+import { fromTable, fromTasks, supabase } from "@/integrations/supabase/client";
 import { Task } from '@/types/database';
 import { toast } from '@/components/ui/use-toast';
 
@@ -13,7 +13,8 @@ const TasksList = () => {
   const { data: tasks, isLoading, error, refetch } = useQuery({
     queryKey: ['pendingTasks'],
     queryFn: async () => {
-      const { data, error } = await (fromTable('tasks') as any)
+      // Use the fromTasks helper instead of direct fromTable
+      const { data, error } = await fromTasks()
         .select('*, users_profiles(full_name)')
         .eq('status', 'pending')
         .order('due_date', { ascending: true })
@@ -28,8 +29,8 @@ const TasksList = () => {
   });
 
   const completeTask = async (taskId: string) => {
-    const { error } = await (supabase
-      .from('tasks') as any)
+    // Use fromTasks helper instead
+    const { error } = await fromTasks()
       .update({ status: 'completed', updated_at: new Date().toISOString() })
       .eq('id', taskId);
     

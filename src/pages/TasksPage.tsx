@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import CrudLayout from '@/components/common/crud/CrudLayout';
 import { Task } from '@/types/database';
-import { fromTable } from '@/integrations/supabase/client';
+import { fromTable, fromTasks } from '@/integrations/supabase/client';
 import { DataTable } from '@/components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
@@ -22,7 +22,8 @@ const TasksPage = () => {
   const { data: tasks = [], refetch } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const { data, error } = await fromTable<Task>('tasks')
+      // Use the fromTasks helper to avoid type errors
+      const { data, error } = await fromTasks()
         .select('*')
         .order('due_date', { ascending: true });
       
@@ -33,7 +34,8 @@ const TasksPage = () => {
   
   const deleteTaskMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await fromTable('tasks')
+      // Use the fromTasks helper here too
+      const { error } = await fromTasks()
         .delete()
         .eq('id', id);
         
