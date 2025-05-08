@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { 
   CurrencyState, 
@@ -12,7 +13,8 @@ import {
 import { 
   fetchCurrencies, 
   fetchConversionRate, 
-  setupAutoUpdate 
+  setupAutoUpdate,
+  CurrencyApiConfig
 } from './api';
 
 interface ExtendedCurrencyState extends CurrencyState {
@@ -20,6 +22,7 @@ interface ExtendedCurrencyState extends CurrencyState {
   provider: ExchangeRateProvider;
   manualRate: number;
   apiRate: number | null;
+  apiConfig: CurrencyApiConfig; // Add apiConfig to match what ConfigPanel expects
   
   // Acciones
   fetchCurrencies: () => Promise<void>;
@@ -31,6 +34,7 @@ interface ExtendedCurrencyState extends CurrencyState {
   addToHistory: (entry: Omit<HistoryEntry, 'id' | 'date'>) => void;
   updateManualRate: (rate: number) => void;
   updateProvider: (config: Partial<ExchangeRateProvider>) => void;
+  updateApiConfig: (config: Partial<CurrencyApiConfig>) => void; // Add updateApiConfig action
   formatAmount: (amount: number, currency: CurrencyCode) => string;
 }
 
@@ -47,6 +51,7 @@ const initialState: Omit<ExtendedCurrencyState,
   | 'addToHistory' 
   | 'updateManualRate' 
   | 'updateProvider'
+  | 'updateApiConfig'
   | 'formatAmount'
 > = {
   // Datos base
@@ -78,7 +83,15 @@ const initialState: Omit<ExtendedCurrencyState,
     updateInterval: CURRENCY_CONSTANTS.DEFAULT_UPDATE_INTERVAL
   },
   manualRate: 91.50,
-  apiRate: null
+  apiRate: null,
+  
+  // API config
+  apiConfig: {
+    provider: 'manual',
+    updateInterval: CURRENCY_CONSTANTS.DEFAULT_UPDATE_INTERVAL,
+    baseCurrency: CURRENCY_CONSTANTS.DEFAULT_CURRENCY,
+    key: ''
+  }
 };
 
 export const useCurrencyStore = create<ExtendedCurrencyState>((set, get) => {
@@ -87,8 +100,10 @@ export const useCurrencyStore = create<ExtendedCurrencyState>((set, get) => {
   // Configurar actualización automática
   if (typeof window !== 'undefined') {
     cleanup = setupAutoUpdate({
-      name: initialState.provider.name,
-      updateInterval: initialState.config.updateInterval
+      provider: initialState.apiConfig.provider,
+      updateInterval: initialState.config.updateInterval,
+      baseCurrency: initialState.apiConfig.baseCurrency,
+      key: initialState.apiConfig.key
     });
   }
 
@@ -269,7 +284,28 @@ export const useCurrencyStore = create<ExtendedCurrencyState>((set, get) => {
       }
       
       const newConfig = { ...get().provider, ...config };
+      cleanup = setupAutoUpdate({
+        provider: 'manual',
+        updateInterval: newConfig.updateInterval,
+        baseCurrency: get().baseCurrency || CURRENCY_CONSTANTS.DEFAULT_CURRENCY
+      });
+    },
+    
+    updateApiConfig: (config: Partial<CurrencyApiConfig>) => {
+      set((state) => ({
+        apiConfig: { ...state.apiConfig, ...config },
+        error: null
+      }));
+      
+      if (cleanup) {
+        cleanup();
+      }
+      
+      const newConfig = { ...get().apiConfig, ...config };
       cleanup = setupAutoUpdate(newConfig);
+      
+      // Actualizar el último acceso
+      set({ lastUpdate: new Date() });
     },
 
     reset: () => {
@@ -280,8 +316,10 @@ export const useCurrencyStore = create<ExtendedCurrencyState>((set, get) => {
       set(initialState);
 
       cleanup = setupAutoUpdate({
-        name: initialState.provider.name,
-        updateInterval: initialState.config.updateInterval
+        provider: initialState.apiConfig.provider,
+        updateInterval: initialState.config.updateInterval,
+        baseCurrency: initialState.apiConfig.baseCurrency,
+        key: initialState.apiConfig.key
       });
     }
   };
@@ -293,6 +331,10 @@ export const updateManualRate = (rate: number) =>
 
 export const updateProvider = (config: Partial<ExchangeRateProvider>) => 
   useCurrencyStore.getState().updateProvider(config);
+
+// Export the missing updateApiConfig helper function
+export const updateApiConfig = (config: Partial<CurrencyApiConfig>) => 
+  useCurrencyStore.getState().updateApiConfig(config);
 
 // Cleanup en desmontaje
 if (typeof window !== 'undefined') {

@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ConversionPanel from './components/ConversionPanel';
 import ConfigPanel from './components/ConfigPanel';
 import HistoryPanel from './components/HistoryPanel';
-import { setupAutoUpdate } from '@/features/currency/api';
 import { useCurrencyStore } from '@/features/currency/store';
+import { setupAutoUpdate } from '@/features/currency/api';
 
 const CurrencyPage = () => {
   const { apiConfig } = useCurrencyStore();

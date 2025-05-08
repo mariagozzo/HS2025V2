@@ -1,4 +1,14 @@
+
 import { ConversionRate, Currency, CurrencyCode } from './types';
+
+// Interfaz para la configuración de la API
+export interface CurrencyApiConfig {
+  provider: 'manual' | 'exchangerate' | 'openexchange' | 'bancentralve' | 'apilayer';
+  apiKey?: string;
+  updateInterval: number; // en milisegundos
+  baseCurrency: CurrencyCode;
+  key?: string;
+}
 
 // Monedas disponibles en el sistema
 const mockCurrencies: Currency[] = [
@@ -34,14 +44,6 @@ const mockRates: Record<string, Record<string, number>> = {
   },
   // Añadir más tasas según sea necesario
 };
-
-// Interfaz para la configuración de la API
-export interface CurrencyApiConfig {
-  provider: 'manual' | 'bancentralve' | 'apilayer';
-  apiKey?: string;
-  updateInterval: number; // en milisegundos
-  baseCurrency: CurrencyCode;
-}
 
 /**
  * Obtiene todas las monedas disponibles en el sistema
@@ -108,10 +110,14 @@ export async function fetchConversionRate(
 
 /**
  * Obtiene la tasa de cambio desde una API externa
- * @param config Configuración de la API
+ * @param apiKey Clave de API (para proveedores que la requieren)
+ * @param provider Proveedor de tasas de cambio
  * @returns Promise con el resultado de la operación
  */
-export async function fetchExchangeRate(config: CurrencyApiConfig): Promise<{
+export async function fetchExchangeRate(
+  apiKey: string, 
+  provider: string
+): Promise<{
   success: boolean;
   rate?: number;
   error?: string;
@@ -119,7 +125,7 @@ export async function fetchExchangeRate(config: CurrencyApiConfig): Promise<{
 }> {
   try {
     // Aquí iría la implementación real según el proveedor
-    switch (config.provider) {
+    switch (provider) {
       case 'bancentralve':
         // Implementar llamada a API del BCV
         return {
@@ -129,13 +135,25 @@ export async function fetchExchangeRate(config: CurrencyApiConfig): Promise<{
         };
 
       case 'apilayer':
-        if (!config.apiKey) {
-          throw new Error('Se requiere apiKey para usar apilayer');
+      case 'exchangerate':
+        if (!apiKey) {
+          throw new Error('Se requiere API key para usar este proveedor');
         }
         // Implementar llamada a API de apilayer
         return {
           success: true,
           rate: 36.75,
+          timestamp: Date.now()
+        };
+        
+      case 'openexchange':
+        if (!apiKey) {
+          throw new Error('Se requiere API key para usar este proveedor');
+        }
+        // Implementar llamada a API de Open Exchange Rates
+        return {
+          success: true,
+          rate: 36.85,
           timestamp: Date.now()
         };
 
@@ -153,7 +171,7 @@ export async function fetchExchangeRate(config: CurrencyApiConfig): Promise<{
     console.error('Error al obtener tasa de cambio:', error);
     return {
       success: false,
-      error: 'No se pudo obtener la tasa de cambio'
+      error: error instanceof Error ? error.message : 'No se pudo obtener la tasa de cambio'
     };
   }
 }
@@ -170,10 +188,12 @@ export function setupAutoUpdate(config: CurrencyApiConfig): () => void {
 
   const updateRates = async () => {
     try {
-      const result = await fetchExchangeRate(config);
-      if (result.success && result.rate) {
-        // Aquí se implementaría la actualización de las tasas en el estado global
-        console.log('Tasas actualizadas:', result.rate);
+      if (config.provider !== 'manual' && config.key) {
+        const result = await fetchExchangeRate(config.key, config.provider);
+        if (result.success && result.rate) {
+          // Aquí se implementaría la actualización de las tasas en el estado global
+          console.log('Tasas actualizadas:', result.rate);
+        }
       }
     } catch (error) {
       console.error('Error en la actualización automática:', error);

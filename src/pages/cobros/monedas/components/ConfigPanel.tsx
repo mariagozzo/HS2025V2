@@ -16,7 +16,7 @@ const ConfigPanel: React.FC = () => {
     updateManualRate(rate);
   };
   
-  const handleApiConfigChange = (field: keyof typeof apiConfig, value: string | number) => {
+  const handleApiConfigChange = (field: keyof typeof apiConfig, value: string | number | 'manual' | 'exchangerate' | 'openexchange') => {
     updateApiConfig({ [field]: value });
   };
   
@@ -92,7 +92,7 @@ const ConfigPanel: React.FC = () => {
                 <Input
                   id="api-key"
                   type="text" 
-                  value={apiConfig.key}
+                  value={apiConfig.key || ''}
                   onChange={(e) => handleApiConfigChange('key', e.target.value)}
                   placeholder="Ingresa tu API key"
                 />
