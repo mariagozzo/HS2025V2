@@ -1,5 +1,5 @@
+
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
 import PageLayout from '@/components/common/PageLayout';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
@@ -64,9 +64,6 @@ const ClaimsPage = () => {
 
   return (
     <PageLayout>
-      <Helmet>
-        <title>Siniestros | HubSeguros</title>
-      </Helmet>
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Siniestros</h1>

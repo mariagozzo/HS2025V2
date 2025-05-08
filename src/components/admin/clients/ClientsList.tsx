@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DataTable } from '@/components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
@@ -13,11 +12,13 @@ import { format } from 'date-fns';
 
 interface ClientsListProps {
   clients: Client[];
-  onEdit: (client: Client) => void;
-  onDelete: () => void;
+  isLoading?: boolean;
+  error?: Error | null;
+  onEdit?: (client: Client) => void;
+  onDelete?: () => void;
 }
 
-const ClientsList = ({ clients, onEdit, onDelete }: ClientsListProps) => {
+const ClientsList = ({ clients, isLoading, error, onEdit = () => {}, onDelete = () => {} }: ClientsListProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   

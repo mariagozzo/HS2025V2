@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
 import PageLayout from '@/components/common/PageLayout';
 import ClientsList from '@/components/admin/clients/ClientsList';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fromClients } from '@/integrations/supabase/client';
 
 const ClientsPage = () => {
-  const { data: clients, isLoading, error } = useQuery({
+  const { data: clients, isLoading, error, refetch } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
       const { data, error } = await fromClients()
@@ -26,9 +25,6 @@ const ClientsPage = () => {
 
   return (
     <PageLayout>
-      <Helmet>
-        <title>Clientes | HubSeguros</title>
-      </Helmet>
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Clientes</h1>
@@ -37,7 +33,12 @@ const ClientsPage = () => {
           </Button>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
-          <ClientsList clients={clients || []} isLoading={isLoading} error={error} />
+          <ClientsList 
+            clients={clients || []} 
+            isLoading={isLoading} 
+            error={error} 
+            onDelete={refetch}
+          />
         </div>
       </div>
     </PageLayout>

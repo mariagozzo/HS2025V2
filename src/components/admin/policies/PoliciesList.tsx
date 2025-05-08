@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DataTable } from '@/components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
@@ -15,11 +14,21 @@ import { Badge } from '@/components/ui/badge';
 
 interface PoliciesListProps {
   policies: Policy[];
+  isLoading?: boolean;
+  error?: Error | null;
   onEdit: (policy: Policy) => void;
-  onDelete: () => void;
+  refetch?: () => void;
+  onDelete?: () => void;
 }
 
-const PoliciesList = ({ policies, onEdit, onDelete }: PoliciesListProps) => {
+const PoliciesList = ({ 
+  policies, 
+  isLoading, 
+  error, 
+  onEdit, 
+  refetch = () => {}, 
+  onDelete = () => {} 
+}: PoliciesListProps) => {
   const [viewingPolicy, setViewingPolicy] = useState<Policy | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -201,7 +210,10 @@ const PoliciesList = ({ policies, onEdit, onDelete }: PoliciesListProps) => {
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           policy={policyToDelete}
-          onSuccess={onDelete}
+          onSuccess={() => {
+            onDelete();
+            refetch();
+          }}
         />
       )}
     </div>

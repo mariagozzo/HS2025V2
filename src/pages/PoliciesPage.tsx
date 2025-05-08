@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import PageLayout from '@/components/common/PageLayout';
 import PoliciesList from '@/components/admin/policies/PoliciesList';
 import { Button } from '@/components/ui/button';
@@ -29,9 +28,6 @@ const PoliciesPage = () => {
 
   return (
     <PageLayout>
-      <Helmet>
-        <title>Pólizas | HubSeguros</title>
-      </Helmet>
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Pólizas</h1>
