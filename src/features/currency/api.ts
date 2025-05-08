@@ -17,7 +17,7 @@ const mockRates: Record<string, Record<string, number>> = {
   USD: {
     EUR: 0.92,
     COP: 4150.0,
-    VES: 36.75,
+    VES: 91.50,
     PEN: 3.85,
     MXN: 17.25,
     CLP: 945.50,
@@ -26,7 +26,7 @@ const mockRates: Record<string, Record<string, number>> = {
   EUR: {
     USD: 1.09,
     COP: 4520.0,
-    VES: 39.95,
+    VES: 91.50,
     PEN: 4.19,
     MXN: 18.80,
     CLP: 1030.0,
