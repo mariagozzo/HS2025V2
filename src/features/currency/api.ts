@@ -8,6 +8,10 @@ import {
   CURRENCY_CONSTANTS
 } from './types';
 
+// Constantes y configuración
+const CACHE_DURATION = 300000; // 5 minutos en ms
+const NETWORK_DELAY = 500; // Simulación de latencia en ms
+
 /**
  * Monedas disponibles en el sistema
  */
@@ -47,23 +51,28 @@ interface ExchangeRateResponse {
   provider: string;
 }
 
+// Cache mejorado con tipo
+interface CacheEntry {
+  rate: number;
+  timestamp: number;
+}
+
 /**
  * Cache para tasas de cambio
  */
-const ratesCache = new Map<string, { rate: number; timestamp: number }>();
+const ratesCache = new Map<string, CacheEntry>();
 
 /**
  * Obtiene todas las monedas disponibles
  */
 export async function fetchCurrencies(): Promise<Currency[]> {
   try {
-    // Simular latencia de red
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, NETWORK_DELAY));
     return DEFAULT_CURRENCIES;
   } catch (error) {
     throw new CurrencyError(
       'No se pudieron cargar las monedas',
-      'NETWORK_ERROR' as CurrencyErrorCode,
+      'NETWORK_ERROR',
       { error }
     );
   }
@@ -77,31 +86,28 @@ export async function fetchConversionRate(
   to: CurrencyCode
 ): Promise<number> {
   try {
-    // Verificar monedas iguales
     if (from === to) return 1;
 
-    // Verificar cache
     const cacheKey = `${from}-${to}`;
     const cached = ratesCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < 300000) { // 5 minutos
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       return cached.rate;
     }
 
-    // Calcular tasa usando USD como base
     const fromRate = BASE_RATES[from];
     const toRate = BASE_RATES[to];
 
     if (!fromRate || !toRate) {
       throw new CurrencyError(
         `Tasa no disponible para ${from} a ${to}`,
-        'CONVERSION_ERROR' as CurrencyErrorCode,
+        'CONVERSION_ERROR',
         { from, to }
       );
     }
 
     const rate = toRate / fromRate;
 
-    // Actualizar cache
     ratesCache.set(cacheKey, {
       rate,
       timestamp: Date.now()
@@ -113,7 +119,7 @@ export async function fetchConversionRate(
     
     throw new CurrencyError(
       'Error al obtener tasa de cambio',
-      'NETWORK_ERROR' as CurrencyErrorCode,
+      'NETWORK_ERROR',
       { from, to, error }
     );
   }
@@ -128,7 +134,7 @@ export async function fetchExchangeRate(
   if (!provider.isActive) {
     throw new CurrencyError(
       'Proveedor inactivo',
-      'PROVIDER_ERROR' as CurrencyErrorCode,
+      'PROVIDER_ERROR',
       { provider: provider.name }
     );
   }
@@ -149,7 +155,7 @@ export async function fetchExchangeRate(
       default:
         throw new CurrencyError(
           'Proveedor no soportado',
-          'CONFIG_ERROR' as CurrencyErrorCode,
+          'CONFIG_ERROR',
           { provider: provider.name }
         );
     }
@@ -186,7 +192,7 @@ async function fetchApiLayerRate(
   if (!provider.apiKey) {
     throw new CurrencyError(
       'API Key requerida',
-      'CONFIG_ERROR' as CurrencyErrorCode
+      'CONFIG_ERROR'
     );
   }
 
@@ -219,7 +225,6 @@ export function setupAutoUpdate(
       const result = await fetchExchangeRate(provider);
       
       if (result.success && result.rate) {
-        // Actualizar cache con nueva tasa
         const cacheKey = `${provider.baseCurrency}-VES`;
         ratesCache.set(cacheKey, {
           rate: result.rate,
@@ -233,7 +238,6 @@ export function setupAutoUpdate(
     }
   };
 
-  // Configurar intervalo
   const intervalId = setInterval(
     updateRates,
     Math.max(
@@ -242,7 +246,6 @@ export function setupAutoUpdate(
     )
   );
 
-  // Primera actualización
   updateRates();
 
   return () => {

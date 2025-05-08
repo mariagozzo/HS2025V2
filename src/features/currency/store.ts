@@ -19,6 +19,24 @@ import {
   setupAutoUpdate 
 } from './api';
 
+// Selectores dedicados para mejor reutilización
+const currencySelectors = {
+  provider: (state: CurrencyState) => state.provider,
+  currencies: (state: CurrencyState) => state.currencies,
+  selectedCurrencies: (state: CurrencyState) => ({
+    from: state.selectedFromCurrency,
+    to: state.selectedToCurrency
+  }),
+  conversionState: (state: CurrencyState) => ({
+    amount: state.amount,
+    result: state.conversionResult,
+    isLoading: state.isLoading,
+    error: state.error
+  }),
+  config: (state: CurrencyState) => state.config,
+  history: (state: CurrencyState) => state.history.slice(-state.config.maxHistoryEntries)
+};
+
 // Tipos para el store
 interface ExtendedCurrencyState extends CurrencyState {
   // Acciones de configuración
@@ -156,13 +174,13 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
           if (amount < CURRENCY_CONSTANTS.MIN_AMOUNT) {
             throw new CurrencyError(
               'El monto debe ser mayor o igual a 0',
-              'INVALID_AMOUNT' as CurrencyErrorCode
+              'INVALID_AMOUNT'
             );
           }
           if (amount > CURRENCY_CONSTANTS.MAX_AMOUNT) {
             throw new CurrencyError(
               'El monto excede el límite permitido',
-              'INVALID_AMOUNT' as CurrencyErrorCode
+              'INVALID_AMOUNT'
             );
           }
           set({ amount, error: null });
@@ -179,7 +197,7 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
           if (!selectedFromCurrency || !selectedToCurrency || amount < 0) {
             throw new CurrencyError(
               'Parámetros de conversión inválidos',
-              'CONVERSION_ERROR' as CurrencyErrorCode,
+              'CONVERSION_ERROR',
               { amount, from: selectedFromCurrency, to: selectedToCurrency }
             );
           }
@@ -197,8 +215,8 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
               from: selectedFromCurrency,
               to: selectedToCurrency,
               timestamp: Date.now(),
-              formattedAmount: get().formatAmount(amount, selectedFromCurrency),
-              formattedConvertedAmount: get().formatAmount(convertedAmount, selectedToCurrency),
+              formattedAmount: formatAmount(amount, selectedFromCurrency),
+              formattedConvertedAmount: formatAmount(convertedAmount, selectedToCurrency),
               provider: provider.name
             };
 
@@ -246,7 +264,7 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
           if (rate <= 0) {
             throw new CurrencyError(
               'La tasa debe ser mayor que 0',
-              'INVALID_RATE' as CurrencyErrorCode,
+              'INVALID_RATE',
               { rate }
             );
           }
@@ -312,6 +330,16 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
     }
   )
 );
+
+// Exportar selectores
+export const {
+  provider,
+  currencies,
+  selectedCurrencies,
+  conversionState,
+  config,
+  history
+} = currencySelectors;
 
 // Helpers exportados
 export const updateManualRate = (rate: number) => 
