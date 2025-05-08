@@ -39,14 +39,14 @@ export const convertCurrency = (request: ConversionRequest): ConversionResult =>
     output = amount / rate;
   }
   
-  // Update history
+  // Update history with the correctly typed source
   useCurrencyStore.setState((state) => ({
     history: [
       ...state.history,
       {
         date: new Date(),
         rate,
-        source: useApi && apiRate ? 'api' : 'manual',
+        source: (useApi && apiRate ? 'api' : 'manual') as 'api' | 'manual',
       },
     ].slice(-50), // Keep only last 50 entries
   }));
@@ -57,6 +57,8 @@ export const convertCurrency = (request: ConversionRequest): ConversionResult =>
     rate,
     timestamp: new Date(),
     source: useApi && apiRate ? 'api' : 'manual',
+    from,
+    to,
   };
 };
 

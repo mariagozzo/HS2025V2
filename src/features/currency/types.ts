@@ -28,4 +28,6 @@ export interface ConversionResult {
   rate: number;
   timestamp: Date;
   source: 'manual' | 'api';
+  from: 'USD' | 'VEF';
+  to: 'USD' | 'VEF';
 }
