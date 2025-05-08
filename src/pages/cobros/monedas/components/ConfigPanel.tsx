@@ -72,7 +72,7 @@ const ConfigPanel: React.FC = () => {
             <Label htmlFor="api-provider">Proveedor</Label>
             <Select
               value={apiConfig.provider}
-              onValueChange={(value) => handleApiConfigChange('provider', value)}
+              onValueChange={(value: 'manual' | 'exchangerate' | 'openexchange') => handleApiConfigChange('provider', value)}
             >
               <SelectTrigger id="api-provider">
                 <SelectValue placeholder="Seleccionar proveedor" />

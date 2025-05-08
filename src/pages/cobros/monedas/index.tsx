@@ -6,13 +6,16 @@ import ConversionPanel from './components/ConversionPanel';
 import ConfigPanel from './components/ConfigPanel';
 import HistoryPanel from './components/HistoryPanel';
 import { setupAutoUpdate } from '@/features/currency/api';
+import { useCurrencyStore } from '@/features/currency/store';
 
 const CurrencyPage = () => {
-  // Set up auto-update when the component mounts
+  const { apiConfig } = useCurrencyStore();
+
+  // Set up auto-update when the component mounts or apiConfig changes
   useEffect(() => {
-    const cleanup = setupAutoUpdate();
+    const cleanup = setupAutoUpdate(apiConfig);
     return cleanup;
-  }, []);
+  }, [apiConfig]);
   
   return (
     <PageLayout title="Gestión de Monedas">

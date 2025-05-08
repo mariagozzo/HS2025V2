@@ -1,9 +1,28 @@
 
 import { create } from 'zustand';
 import { CurrencyState, CurrencyCode, ConversionResult } from './types';
-import { fetchCurrencies, fetchConversionRate } from './api';
+import { fetchCurrencies, fetchConversionRate, ApiConfig } from './api';
 
-const initialState: CurrencyState = {
+interface ExtendedCurrencyState extends CurrencyState {
+  // API configuration
+  apiConfig: ApiConfig;
+  manualRate: number;
+  apiRate: number | null;
+  lastUpdate: Date | null;
+  
+  // Action creators
+  fetchCurrencies: () => Promise<void>;
+  setBaseCurrency: (code: CurrencyCode) => void;
+  setSelectedCurrencies: (from: CurrencyCode, to: CurrencyCode) => void;
+  setAmount: (amount: number) => void;
+  convertCurrency: () => Promise<ConversionResult | null>;
+  reset: () => void;
+  addToHistory: (rate: number, source: "manual" | "api") => void;
+  updateManualRate: (rate: number) => void;
+  updateApiConfig: (config: Partial<ApiConfig>) => void;
+}
+
+const initialState: ExtendedCurrencyState = {
   currencies: [],
   baseCurrency: null,
   conversionRates: [],
@@ -14,10 +33,31 @@ const initialState: CurrencyState = {
   conversionResult: null,
   isLoading: false,
   error: null,
-  history: []
+  history: [],
+  
+  // New properties
+  apiConfig: {
+    provider: 'manual',
+    key: '',
+    updateInterval: 60000 // 1 minute
+  },
+  manualRate: 36.75,
+  apiRate: null,
+  lastUpdate: null,
+  
+  // Action creators (will be implemented by create)
+  fetchCurrencies: async () => {},
+  setBaseCurrency: () => {},
+  setSelectedCurrencies: () => {},
+  setAmount: () => {},
+  convertCurrency: async () => null,
+  reset: () => {},
+  addToHistory: () => {},
+  updateManualRate: () => {},
+  updateApiConfig: () => {},
 };
 
-export const useCurrencyStore = create<CurrencyState>((set, get) => ({
+export const useCurrencyStore = create<ExtendedCurrencyState>((set, get) => ({
   ...initialState,
 
   // Actions
@@ -50,7 +90,7 @@ export const useCurrencyStore = create<CurrencyState>((set, get) => ({
 
     if (!selectedFromCurrency || !selectedToCurrency || amount <= 0) {
       set({ error: 'Invalid conversion parameters' });
-      return;
+      return null;
     }
 
     set({ isLoading: true, error: null });
@@ -83,5 +123,25 @@ export const useCurrencyStore = create<CurrencyState>((set, get) => ({
     }
   },
 
+  // New actions
+  updateManualRate: (rate: number) => {
+    set({ 
+      manualRate: rate,
+      lastUpdate: new Date()
+    });
+    // Add to history
+    get().addToHistory(rate, "manual");
+  },
+
+  updateApiConfig: (config: Partial<ApiConfig>) => {
+    set((state) => ({
+      apiConfig: { ...state.apiConfig, ...config }
+    }));
+  },
+
   reset: () => set(initialState)
 }));
+
+// Export helper functions to use in components
+export const updateManualRate = (rate: number) => useCurrencyStore.getState().updateManualRate(rate);
+export const updateApiConfig = (config: Partial<ApiConfig>) => useCurrencyStore.getState().updateApiConfig(config);
