@@ -1,99 +1,191 @@
-
 import { ConversionRate, Currency, CurrencyCode } from './types';
 
-// Mock data for currencies
+// Monedas disponibles en el sistema
 const mockCurrencies: Currency[] = [
-  { code: 'USD', name: 'US Dollar', symbol: '$', active: true },
+  { code: 'USD', name: 'Dólar Estadounidense', symbol: '$', active: true },
   { code: 'EUR', name: 'Euro', symbol: '€', active: true },
-  { code: 'GBP', name: 'British Pound', symbol: '£', active: true },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', active: true },
-  { code: 'VEF', name: 'Venezuelan Bolívar', symbol: 'Bs.', active: true }
+  { code: 'COP', name: 'Peso Colombiano', symbol: '$', active: true },
+  { code: 'VES', name: 'Bolívar Digital', symbol: 'Bs.', active: true },
+  { code: 'PEN', name: 'Sol Peruano', symbol: 'S/.', active: true },
+  { code: 'MXN', name: 'Peso Mexicano', symbol: '$', active: true },
+  { code: 'CLP', name: 'Peso Chileno', symbol: '$', active: true },
+  { code: 'ARS', name: 'Peso Argentino', symbol: '$', active: true }
 ];
 
-// Mock rates between currencies
+// Tasas de cambio entre monedas (datos de ejemplo)
 const mockRates: Record<string, Record<string, number>> = {
-  USD: { EUR: 0.92, GBP: 0.78, JPY: 149.8, VEF: 36.75 },
-  EUR: { USD: 1.09, GBP: 0.85, JPY: 163.1, VEF: 39.95 },
-  GBP: { USD: 1.28, EUR: 1.18, JPY: 192.1, VEF: 47.0 },
-  JPY: { USD: 0.0067, EUR: 0.0061, GBP: 0.0052, VEF: 0.25 },
-  VEF: { USD: 0.027, EUR: 0.025, GBP: 0.021, JPY: 4.0 }
+  USD: {
+    EUR: 0.92,
+    COP: 4150.0,
+    VES: 36.75,
+    PEN: 3.85,
+    MXN: 17.25,
+    CLP: 945.50,
+    ARS: 850.25
+  },
+  EUR: {
+    USD: 1.09,
+    COP: 4520.0,
+    VES: 39.95,
+    PEN: 4.19,
+    MXN: 18.80,
+    CLP: 1030.0,
+    ARS: 926.77
+  },
+  // Añadir más tasas según sea necesario
 };
 
-// API interface
-export interface ApiConfig {
-  provider: 'manual' | 'exchangerate' | 'openexchange';
-  key: string;
-  updateInterval: number;
+// Interfaz para la configuración de la API
+export interface CurrencyApiConfig {
+  provider: 'manual' | 'bancentralve' | 'apilayer';
+  apiKey?: string;
+  updateInterval: number; // en milisegundos
+  baseCurrency: CurrencyCode;
 }
 
-// Fetch all available currencies
+/**
+ * Obtiene todas las monedas disponibles en el sistema
+ * @returns Promise<Currency[]> Lista de monedas disponibles
+ */
 export async function fetchCurrencies(): Promise<Currency[]> {
-  // In a real app, this would be an API call
-  return new Promise(resolve => {
-    setTimeout(() => resolve(mockCurrencies), 500);
-  });
+  try {
+    // En producción, esto sería una llamada a la API real
+    return new Promise(resolve => {
+      setTimeout(() => resolve(mockCurrencies), 500);
+    });
+  } catch (error) {
+    console.error('Error al obtener las monedas:', error);
+    throw new Error('No se pudieron cargar las monedas');
+  }
 }
 
-// Fetch conversion rate between two currencies
-export async function fetchConversionRate(from: CurrencyCode, to: CurrencyCode): Promise<number> {
-  // In a real app, this would be an API call
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (!mockRates[from] || !mockRates[from][to]) {
+/**
+ * Obtiene la tasa de cambio entre dos monedas
+ * @param from Moneda de origen
+ * @param to Moneda de destino
+ * @returns Promise<number> Tasa de cambio
+ */
+export async function fetchConversionRate(
+  from: CurrencyCode,
+  to: CurrencyCode
+): Promise<number> {
+  try {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        // Si las monedas son iguales, la tasa es 1
         if (from === to) {
-          resolve(1); // Same currency conversion rate is always 1
-        } else {
-          reject(new Error(`No conversion rate available for ${from} to ${to}`));
+          resolve(1);
+          return;
         }
-      } else {
-        resolve(mockRates[from][to]);
-      }
-    }, 500);
-  });
+
+        // Verificar si existe la tasa directa
+        if (mockRates[from]?.[to]) {
+          resolve(mockRates[from][to]);
+          return;
+        }
+
+        // Verificar si existe la tasa inversa
+        if (mockRates[to]?.[from]) {
+          resolve(1 / mockRates[to][from]);
+          return;
+        }
+
+        // Si no hay tasa disponible, intentar conversión a través de USD
+        if (mockRates['USD'][from] && mockRates['USD'][to]) {
+          const throughUSD = mockRates['USD'][to] / mockRates['USD'][from];
+          resolve(throughUSD);
+          return;
+        }
+
+        reject(new Error(`No hay tasa de conversión disponible para ${from} a ${to}`));
+      }, 500);
+    });
+  } catch (error) {
+    console.error('Error al obtener la tasa de cambio:', error);
+    throw error;
+  }
 }
 
-// Fetch exchange rate from external API
-export async function fetchExchangeRate(apiKey: string, provider: string): Promise<{
+/**
+ * Obtiene la tasa de cambio desde una API externa
+ * @param config Configuración de la API
+ * @returns Promise con el resultado de la operación
+ */
+export async function fetchExchangeRate(config: CurrencyApiConfig): Promise<{
   success: boolean;
   rate?: number;
   error?: string;
+  timestamp?: number;
 }> {
   try {
-    // This is a placeholder. In a real implementation, you would call an actual API
-    // Example: return fetch(`https://api.${provider}.com/latest?base=USD&symbols=VEF&access_key=${apiKey}`)
-    
-    // For now, let's simulate an API response
-    const mockResponse = {
-      success: true,
-      rate: 36.75,
-    };
-    
-    return mockResponse;
+    // Aquí iría la implementación real según el proveedor
+    switch (config.provider) {
+      case 'bancentralve':
+        // Implementar llamada a API del BCV
+        return {
+          success: true,
+          rate: 36.75,
+          timestamp: Date.now()
+        };
+
+      case 'apilayer':
+        if (!config.apiKey) {
+          throw new Error('Se requiere apiKey para usar apilayer');
+        }
+        // Implementar llamada a API de apilayer
+        return {
+          success: true,
+          rate: 36.75,
+          timestamp: Date.now()
+        };
+
+      case 'manual':
+        return {
+          success: true,
+          rate: mockRates.USD.VES,
+          timestamp: Date.now()
+        };
+
+      default:
+        throw new Error('Proveedor de tasas de cambio no soportado');
+    }
   } catch (error) {
-    console.error('Error fetching exchange rate:', error);
+    console.error('Error al obtener tasa de cambio:', error);
     return {
       success: false,
-      error: 'Failed to fetch exchange rate',
+      error: 'No se pudo obtener la tasa de cambio'
     };
   }
 }
 
-// Setup auto update for exchange rates
-export function setupAutoUpdate(config: {
-  provider: string;
-  key: string;
-  updateInterval: number;
-}): () => void {
-  if (!config.key || config.provider === 'manual') {
-    return () => {}; // No cleanup needed
+/**
+ * Configura la actualización automática de tasas de cambio
+ * @param config Configuración para la actualización
+ * @returns Función para limpiar el intervalo
+ */
+export function setupAutoUpdate(config: CurrencyApiConfig): () => void {
+  if (config.provider === 'manual' || !config.updateInterval) {
+    return () => {}; // No se necesita limpieza
   }
-  
-  // Set up interval to update the exchange rate
-  const intervalId = setInterval(
-    () => fetchExchangeRate(config.key, config.provider),
-    config.updateInterval
-  );
-  
-  // Return cleanup function
+
+  const updateRates = async () => {
+    try {
+      const result = await fetchExchangeRate(config);
+      if (result.success && result.rate) {
+        // Aquí se implementaría la actualización de las tasas en el estado global
+        console.log('Tasas actualizadas:', result.rate);
+      }
+    } catch (error) {
+      console.error('Error en la actualización automática:', error);
+    }
+  };
+
+  // Configurar el intervalo de actualización
+  const intervalId = setInterval(updateRates, config.updateInterval);
+
+  // Primera actualización inmediata
+  updateRates();
+
+  // Retornar función de limpieza
   return () => clearInterval(intervalId);
 }
