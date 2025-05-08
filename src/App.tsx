@@ -14,6 +14,7 @@ import TasksPage from "./pages/TasksPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import CurrencyPage from "./pages/cobros/monedas";
 import NotFound from "./pages/NotFound";
+import PlaceholderPage from "./pages/PlaceholderPage";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -35,7 +36,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
             
-            {/* Módulos principales */}
+            {/* Módulos principales con implementaciones existentes */}
             <Route path="/polizas" element={<PoliciesPage />} />
             <Route path="/clientes" element={<ClientsPage />} />
             <Route path="/pagos" element={<PaymentsPage />} />
@@ -45,9 +46,9 @@ const App = () => (
             
             {/* Módulo de Cobros */}
             <Route path="/cobros/monedas" element={<CurrencyPage />} />
-            <Route path="/cobros/pagos" element={<PaymentsPage />} />
-            <Route path="/cobros/recibos" element={<PaymentsPage />} />
-            <Route path="/cobros/liquidar" element={<PaymentsPage />} />
+            <Route path="/cobros/pagos" element={<PlaceholderPage />} />
+            <Route path="/cobros/recibos" element={<PlaceholderPage />} />
+            <Route path="/cobros/liquidar" element={<PlaceholderPage />} />
             
             {/* Rutas para compatibilidad */}
             <Route path="/clientes/crm" element={<ClientsPage />} />
@@ -56,38 +57,38 @@ const App = () => (
             <Route path="/entidades/polizas" element={<PoliciesPage />} />
             
             {/* Configuration routes */}
-            <Route path="/config/motivos-poliza" element={<NotFound />} />
-            <Route path="/config/tipo-afiliacion" element={<NotFound />} />
-            <Route path="/config/mensajeros" element={<NotFound />} />
-            <Route path="/config/coberturas" element={<NotFound />} />
-            <Route path="/config/importar-plantillas" element={<NotFound />} />
+            <Route path="/config/motivos-poliza" element={<PlaceholderPage category="config" />} />
+            <Route path="/config/tipo-afiliacion" element={<PlaceholderPage category="config" />} />
+            <Route path="/config/mensajeros" element={<PlaceholderPage category="config" />} />
+            <Route path="/config/coberturas" element={<PlaceholderPage category="config" />} />
+            <Route path="/config/importar-plantillas" element={<PlaceholderPage category="config" />} />
             
             {/* Entities routes */}
-            <Route path="/entidades/aseguradoras" element={<NotFound />} />
-            <Route path="/entidades/ramos" element={<NotFound />} />
-            <Route path="/entidades/vendedores" element={<NotFound />} />
-            <Route path="/entidades/polizas-cumplimiento" element={<NotFound />} />
-            <Route path="/entidades/campos-adicionales" element={<NotFound />} />
-            <Route path="/entidades/anexos" element={<NotFound />} />
+            <Route path="/entidades/aseguradoras" element={<PlaceholderPage category="entity" />} />
+            <Route path="/entidades/ramos" element={<PlaceholderPage category="entity" />} />
+            <Route path="/entidades/vendedores" element={<PlaceholderPage category="entity" />} />
+            <Route path="/entidades/polizas-cumplimiento" element={<PlaceholderPage category="entity" />} />
+            <Route path="/entidades/campos-adicionales" element={<PlaceholderPage category="entity" />} />
+            <Route path="/entidades/anexos" element={<PlaceholderPage category="entity" />} />
             <Route path="/entidades/cobros" element={<PaymentsPage />} />
-            <Route path="/entidades/vinculados" element={<NotFound />} />
-            <Route path="/entidades/beneficiarios" element={<NotFound />} />
-            <Route path="/entidades/cotizador" element={<NotFound />} />
-            <Route path="/entidades/importar-siniestros" element={<NotFound />} />
-            <Route path="/entidades/importar-amparos" element={<NotFound />} />
+            <Route path="/entidades/vinculados" element={<PlaceholderPage category="entity" />} />
+            <Route path="/entidades/beneficiarios" element={<PlaceholderPage category="entity" />} />
+            <Route path="/entidades/cotizador" element={<PlaceholderPage category="entity" />} />
+            <Route path="/entidades/importar-siniestros" element={<PlaceholderPage category="entity" />} />
+            <Route path="/entidades/importar-amparos" element={<PlaceholderPage category="entity" />} />
             <Route path="/entidades/tareas" element={<TasksPage />} />
-            <Route path="/entidades/importar-datos" element={<NotFound />} />
+            <Route path="/entidades/importar-datos" element={<PlaceholderPage category="entity" />} />
             
             {/* Policy module routes */}
-            <Route path="/polizas/cumplimiento" element={<NotFound />} />
-            <Route path="/polizas/remisiones" element={<NotFound />} />
+            <Route path="/polizas/cumplimiento" element={<PlaceholderPage category="policy" />} />
+            <Route path="/polizas/remisiones" element={<PlaceholderPage category="policy" />} />
             <Route path="/polizas/tareas" element={<TasksPage />} />
             
             {/* Reports routes */}
-            <Route path="/informes/generales" element={<NotFound />} />
+            <Route path="/informes/generales" element={<PlaceholderPage category="report" />} />
             
             {/* Documents routes */}
-            <Route path="/archivos/documentos" element={<NotFound />} />
+            <Route path="/archivos/documentos" element={<PlaceholderPage category="document" />} />
             
             {/* Claims routes */}
             <Route path="/siniestros/registro" element={<ClaimsPage />} />
@@ -96,17 +97,17 @@ const App = () => (
             <Route path="/facturas/registro" element={<InvoicesPage />} />
             
             {/* Agency settings routes */}
-            <Route path="/agencia/usuarios" element={<NotFound />} />
-            <Route path="/agencia/informacion" element={<NotFound />} />
-            <Route path="/agencia/sedes" element={<NotFound />} />
-            <Route path="/agencia/aseguradoras" element={<NotFound />} />
-            <Route path="/agencia/ramos" element={<NotFound />} />
-            <Route path="/agencia/vendedores" element={<NotFound />} />
-            <Route path="/agencia/estados-siniestros" element={<NotFound />} />
-            <Route path="/agencia/estados-arl" element={<NotFound />} />
-            <Route path="/agencia/motivos-poliza" element={<NotFound />} />
-            <Route path="/agencia/tipo-afiliacion" element={<NotFound />} />
-            <Route path="/agencia/mensajeros" element={<NotFound />} />
+            <Route path="/agencia/usuarios" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/informacion" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/sedes" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/aseguradoras" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/ramos" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/vendedores" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/estados-siniestros" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/estados-arl" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/motivos-poliza" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/tipo-afiliacion" element={<PlaceholderPage category="config" />} />
+            <Route path="/agencia/mensajeros" element={<PlaceholderPage category="config" />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
