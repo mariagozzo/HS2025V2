@@ -1,82 +1,87 @@
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { CurrencyState, ConversionRequest, ConversionResult } from './types';
+import { CurrencyState, CurrencyCode, ConversionResult } from './types';
+import { fetchCurrencies, fetchConversionRate } from './api';
 
-export const useCurrencyStore = create<CurrencyState>()(
-  persist(
-    (set) => ({
-      manualRate: 36.5, // Default rate USD to VEF
-      apiRate: null,
-      lastUpdate: null,
-      apiConfig: {
-        key: '',
-        provider: 'manual',
-        updateInterval: 3600000, // 1 hour in milliseconds
-      },
-      history: [],
-    }),
-    {
-      name: 'currency-store',
+const initialState: CurrencyState = {
+  currencies: [],
+  baseCurrency: null,
+  conversionRates: [],
+  selectedFromCurrency: null,
+  selectedToCurrency: null,
+  amount: 0,
+  convertedAmount: null,
+  conversionResult: null,
+  isLoading: false,
+  error: null,
+  history: []
+};
+
+export const useCurrencyStore = create<CurrencyState>((set, get) => ({
+  ...initialState,
+
+  // Actions
+  fetchCurrencies: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const currencies = await fetchCurrencies();
+      set({ currencies, isLoading: false });
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
     }
-  )
-);
+  },
 
-export const convertCurrency = (request: ConversionRequest): ConversionResult => {
-  const { amount, from, to, useApi = false } = request;
-  const { manualRate, apiRate } = useCurrencyStore.getState();
-  
-  // Determine which rate to use
-  const rate = useApi && apiRate ? apiRate : manualRate;
-  
-  let output: number;
-  
-  if (from === to) {
-    output = amount;
-  } else if (from === 'USD' && to === 'VEF') {
-    output = amount * rate;
-  } else {
-    output = amount / rate;
-  }
-  
-  // Define source with the correct type
-  const source: 'manual' | 'api' = useApi && apiRate ? 'api' : 'manual';
-  
-  // Update history with the correctly typed source
-  useCurrencyStore.setState((state) => ({
-    history: [
-      ...state.history,
-      {
-        date: new Date(),
+  setBaseCurrency: (code: CurrencyCode) => set({ baseCurrency: code }),
+
+  setSelectedCurrencies: (from: CurrencyCode, to: CurrencyCode) => {
+    set({ selectedFromCurrency: from, selectedToCurrency: to });
+  },
+
+  setAmount: (amount: number) => set({ amount }),
+
+  addToHistory: (rate: number, source: "manual" | "api") => {
+    set((state) => ({
+      history: [...state.history, { date: new Date(), rate, source }]
+    }));
+  },
+
+  convertCurrency: async () => {
+    const { amount, selectedFromCurrency, selectedToCurrency } = get();
+
+    if (!selectedFromCurrency || !selectedToCurrency || amount <= 0) {
+      set({ error: 'Invalid conversion parameters' });
+      return;
+    }
+
+    set({ isLoading: true, error: null });
+
+    try {
+      const rate = await fetchConversionRate(selectedFromCurrency, selectedToCurrency);
+      const convertedAmount = amount * rate;
+      
+      const result: ConversionResult = {
+        amount,
+        convertedAmount,
         rate,
-        source,
-      },
-    ].slice(-50), // Keep only last 50 entries
-  }));
-  
-  return {
-    input: amount,
-    output,
-    rate,
-    timestamp: new Date(),
-    source,
-    from,
-    to,
-  };
-};
+        from: selectedFromCurrency,
+        to: selectedToCurrency
+      };
 
-export const updateManualRate = (rate: number) => {
-  useCurrencyStore.setState({
-    manualRate: rate,
-    lastUpdate: new Date(),
-  });
-};
+      set({
+        convertedAmount,
+        conversionResult: result,
+        isLoading: false
+      });
 
-export const updateApiConfig = (config: Partial<CurrencyState['apiConfig']>) => {
-  useCurrencyStore.setState((state) => ({
-    apiConfig: {
-      ...state.apiConfig,
-      ...config,
-    },
-  }));
-};
+      // Add to history
+      get().addToHistory(rate, "api");
+
+      return result;
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
+      return null;
+    }
+  },
+
+  reset: () => set(initialState)
+}));
