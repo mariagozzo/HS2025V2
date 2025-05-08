@@ -33,7 +33,7 @@ const HistoryPanel: React.FC = () => {
                   <TableCell>{new Date(entry.date).toLocaleString()}</TableCell>
                   <TableCell>{entry.rate.toFixed(2)}</TableCell>
                   <TableCell>
-                    {entry.source === 'api' ? 'API' : 'Manual'}
+                    {entry.source === 'manual' ? 'Manual' : entry.source}
                   </TableCell>
                 </TableRow>
               ))}

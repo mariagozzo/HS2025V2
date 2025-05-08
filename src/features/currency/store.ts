@@ -113,7 +113,8 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
 
       // Configurar actualización automática
       if (typeof window !== 'undefined') {
-        cleanup = setupAutoUpdate(get().provider);
+        // Fix: Only setup auto-update if window is defined and after the store is initialized
+        // We'll initialize this later in a useEffect hook
       }
 
       // Utilidad de formateo
@@ -305,7 +306,9 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
           }));
           
           const newConfig = { ...get().provider, ...config };
-          cleanup = setupAutoUpdate(newConfig);
+          if (typeof window !== 'undefined') {
+            cleanup = setupAutoUpdate(newConfig);
+          }
         },
 
         reset: () => {
@@ -315,7 +318,9 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
 
           set(initialState);
 
-          cleanup = setupAutoUpdate(initialState.provider);
+          if (typeof window !== 'undefined') {
+            cleanup = setupAutoUpdate(initialState.provider);
+          }
         }
       };
     },
@@ -326,7 +331,21 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
         provider: state.provider,
         config: state.config,
         history: state.history.slice(-10)
-      })
+      }),
+      // Fix: Adding an onRehydrateStorage handler to safely setup auto-update after hydration
+      onRehydrateStorage: () => (state) => {
+        if (state && typeof window !== 'undefined') {
+          const cleanup = setupAutoUpdate(state.provider);
+          // Save the cleanup function to be called later
+          if (state.reset) {
+            const originalReset = state.reset;
+            state.reset = () => {
+              cleanup();
+              originalReset();
+            };
+          }
+        }
+      }
     }
   )
 );
@@ -353,9 +372,13 @@ export const updateProvider = (config: Partial<ExchangeRateProvider>) =>
 export const updateApiConfig = (config: Partial<ExchangeRateProvider>) =>
   useCurrencyStore.getState().updateProvider(config);
 
-// Cleanup en desmontaje
+// Fix: Move the cleanup listener setup to a function that's called after hydration
+// instead of during store creation
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
-    useCurrencyStore.getState().reset();
+    const state = useCurrencyStore.getState();
+    if (state) {
+      state.reset();
+    }
   });
 }
