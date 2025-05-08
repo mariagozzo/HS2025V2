@@ -1,30 +1,57 @@
-
 import { create } from 'zustand';
-import { CurrencyState, CurrencyCode, ConversionResult } from './types';
-import { fetchCurrencies, fetchConversionRate, ApiConfig } from './api';
+import { 
+  CurrencyState, 
+  CurrencyCode, 
+  ConversionResult, 
+  Currency, 
+  CURRENCY_CONSTANTS,
+  CurrencyError,
+  HistoryEntry,
+  ExchangeRateProvider
+} from './types';
+import { 
+  fetchCurrencies, 
+  fetchConversionRate, 
+  setupAutoUpdate 
+} from './api';
 
 interface ExtendedCurrencyState extends CurrencyState {
-  // API configuration
-  apiConfig: ApiConfig;
+  // Configuración adicional
+  provider: ExchangeRateProvider;
   manualRate: number;
   apiRate: number | null;
-  lastUpdate: Date | null;
   
-  // Action creators
+  // Acciones
   fetchCurrencies: () => Promise<void>;
   setBaseCurrency: (code: CurrencyCode) => void;
   setSelectedCurrencies: (from: CurrencyCode, to: CurrencyCode) => void;
   setAmount: (amount: number) => void;
   convertCurrency: () => Promise<ConversionResult | null>;
   reset: () => void;
-  addToHistory: (rate: number, source: "manual" | "api") => void;
+  addToHistory: (entry: Omit<HistoryEntry, 'id' | 'date'>) => void;
   updateManualRate: (rate: number) => void;
-  updateApiConfig: (config: Partial<ApiConfig>) => void;
+  updateProvider: (config: Partial<ExchangeRateProvider>) => void;
+  formatAmount: (amount: number, currency: CurrencyCode) => string;
 }
 
-const initialState: ExtendedCurrencyState = {
+const generateHistoryId = (): string => 
+  'hst_' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+
+const initialState: Omit<ExtendedCurrencyState, 
+  | 'fetchCurrencies' 
+  | 'setBaseCurrency' 
+  | 'setSelectedCurrencies' 
+  | 'setAmount' 
+  | 'convertCurrency' 
+  | 'reset' 
+  | 'addToHistory' 
+  | 'updateManualRate' 
+  | 'updateProvider'
+  | 'formatAmount'
+> = {
+  // Datos base
   currencies: [],
-  baseCurrency: null,
+  baseCurrency: CURRENCY_CONSTANTS.DEFAULT_CURRENCY,
   conversionRates: [],
   selectedFromCurrency: null,
   selectedToCurrency: null,
@@ -34,114 +61,242 @@ const initialState: ExtendedCurrencyState = {
   isLoading: false,
   error: null,
   history: [],
-  
-  // New properties
-  apiConfig: {
-    provider: 'manual',
-    key: '',
-    updateInterval: 60000 // 1 minute
-  },
-  manualRate: 36.75,
-  apiRate: null,
   lastUpdate: null,
   
-  // Action creators (will be implemented by create)
-  fetchCurrencies: async () => {},
-  setBaseCurrency: () => {},
-  setSelectedCurrencies: () => {},
-  setAmount: () => {},
-  convertCurrency: async () => null,
-  reset: () => {},
-  addToHistory: () => {},
-  updateManualRate: () => {},
-  updateApiConfig: () => {},
+  // Configuración
+  config: {
+    defaultCurrency: CURRENCY_CONSTANTS.DEFAULT_CURRENCY,
+    updateInterval: CURRENCY_CONSTANTS.DEFAULT_UPDATE_INTERVAL,
+    maxHistoryEntries: CURRENCY_CONSTANTS.MAX_HISTORY_ENTRIES,
+    displayFormat: 'symbol',
+    autoUpdate: true
+  },
+  
+  // Proveedor de tasas
+  provider: {
+    name: 'manual',
+    updateInterval: CURRENCY_CONSTANTS.DEFAULT_UPDATE_INTERVAL
+  },
+  manualRate: 91.50,
+  apiRate: null
 };
 
-export const useCurrencyStore = create<ExtendedCurrencyState>((set, get) => ({
-  ...initialState,
+export const useCurrencyStore = create<ExtendedCurrencyState>((set, get) => {
+  let cleanup: (() => void) | null = null;
 
-  // Actions
-  fetchCurrencies: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const currencies = await fetchCurrencies();
-      set({ currencies, isLoading: false });
-    } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
-    }
-  },
+  // Configurar actualización automática
+  if (typeof window !== 'undefined') {
+    cleanup = setupAutoUpdate({
+      name: initialState.provider.name,
+      updateInterval: initialState.config.updateInterval
+    });
+  }
 
-  setBaseCurrency: (code: CurrencyCode) => set({ baseCurrency: code }),
+  const formatAmount = (amount: number, currencyCode: CurrencyCode): string => {
+    const currency = get().currencies.find(c => c.code === currencyCode);
+    if (!currency) return amount.toString();
 
-  setSelectedCurrencies: (from: CurrencyCode, to: CurrencyCode) => {
-    set({ selectedFromCurrency: from, selectedToCurrency: to });
-  },
+    return new Intl.NumberFormat('es-VE', {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: currency.decimalPlaces ?? CURRENCY_CONSTANTS.DEFAULT_DECIMAL_PLACES
+    }).format(amount);
+  };
 
-  setAmount: (amount: number) => set({ amount }),
+  return {
+    ...initialState,
+    formatAmount,
 
-  addToHistory: (rate: number, source: "manual" | "api") => {
-    set((state) => ({
-      history: [...state.history, { date: new Date(), rate, source }]
-    }));
-  },
+    fetchCurrencies: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const currencies = await fetchCurrencies();
+        set({ currencies, isLoading: false });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Error al cargar monedas';
+        set({ 
+          error: message, 
+          isLoading: false 
+        });
+      }
+    },
 
-  convertCurrency: async () => {
-    const { amount, selectedFromCurrency, selectedToCurrency } = get();
+    setBaseCurrency: (code: CurrencyCode) => {
+      set({ baseCurrency: code });
+      const { provider } = get();
+      if (provider.name !== 'manual') {
+        get().updateProvider({ name: provider.name });
+      }
+    },
 
-    if (!selectedFromCurrency || !selectedToCurrency || amount <= 0) {
-      set({ error: 'Invalid conversion parameters' });
-      return null;
-    }
-
-    set({ isLoading: true, error: null });
-
-    try {
-      const rate = await fetchConversionRate(selectedFromCurrency, selectedToCurrency);
-      const convertedAmount = amount * rate;
+    setSelectedCurrencies: (from: CurrencyCode, to: CurrencyCode) => {
+      if (from === to) {
+        set({ error: 'Las monedas de origen y destino deben ser diferentes' });
+        return;
+      }
       
-      const result: ConversionResult = {
-        amount,
-        convertedAmount,
-        rate,
-        from: selectedFromCurrency,
-        to: selectedToCurrency
+      set({ 
+        selectedFromCurrency: from, 
+        selectedToCurrency: to,
+        convertedAmount: null,
+        conversionResult: null,
+        error: null
+      });
+    },
+
+    setAmount: (amount: number) => {
+      if (amount < CURRENCY_CONSTANTS.MIN_AMOUNT) {
+        set({ error: 'El monto debe ser mayor o igual a 0' });
+        return;
+      }
+      if (amount > CURRENCY_CONSTANTS.MAX_AMOUNT) {
+        set({ error: 'El monto excede el límite permitido' });
+        return;
+      }
+      set({ amount, error: null });
+    },
+
+    convertCurrency: async () => {
+      const { 
+        amount, 
+        selectedFromCurrency, 
+        selectedToCurrency,
+        provider 
+      } = get();
+
+      if (!selectedFromCurrency || !selectedToCurrency || amount < 0) {
+        throw new CurrencyError(
+          'Parámetros de conversión inválidos',
+          'INVALID_PARAMS',
+          { amount, from: selectedFromCurrency, to: selectedToCurrency }
+        );
+      }
+
+      set({ isLoading: true, error: null });
+
+      try {
+        const rate = await fetchConversionRate(selectedFromCurrency, selectedToCurrency);
+        const convertedAmount = Number((amount * rate).toFixed(2));
+        
+        const result: ConversionResult = {
+          amount,
+          convertedAmount,
+          rate,
+          from: selectedFromCurrency,
+          to: selectedToCurrency,
+          timestamp: Date.now(),
+          formattedAmount: get().formatAmount(amount, selectedFromCurrency),
+          formattedConvertedAmount: get().formatAmount(convertedAmount, selectedToCurrency)
+        };
+
+        set({
+          convertedAmount,
+          conversionResult: result,
+          isLoading: false,
+          lastUpdate: new Date()
+        });
+
+        get().addToHistory({
+          rate,
+          from: selectedFromCurrency,
+          to: selectedToCurrency,
+          amount,
+          convertedAmount,
+          source: provider.name === 'manual' ? 'manual' : 'api',
+          userId: 'mariagozzo' // Current user
+        });
+
+        return result;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Error en la conversión';
+        set({ error: message, isLoading: false });
+        return null;
+      }
+    },
+
+    addToHistory: (entry: Omit<HistoryEntry, 'id' | 'date'>) => {
+      const newEntry: HistoryEntry = {
+        ...entry,
+        id: generateHistoryId(),
+        date: new Date()
       };
 
-      set({
-        convertedAmount,
-        conversionResult: result,
-        isLoading: false
+      set((state) => ({
+        history: [
+          ...state.history,
+          newEntry
+        ].slice(-state.config.maxHistoryEntries)
+      }));
+    },
+
+    updateManualRate: (rate: number) => {
+      if (rate <= 0) {
+        throw new CurrencyError(
+          'La tasa debe ser mayor que 0',
+          'INVALID_RATE',
+          { rate }
+        );
+      }
+
+      set({ 
+        manualRate: rate,
+        lastUpdate: new Date(),
+        error: null
       });
 
-      // Add to history
-      get().addToHistory(rate, "api");
+      const { selectedFromCurrency, selectedToCurrency, amount } = get();
+      if (selectedFromCurrency && selectedToCurrency) {
+        get().addToHistory({
+          rate,
+          from: selectedFromCurrency,
+          to: selectedToCurrency,
+          amount: amount || 0,
+          convertedAmount: amount ? amount * rate : 0,
+          source: 'manual',
+          userId: 'mariagozzo'
+        });
+      }
+    },
 
-      return result;
-    } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
-      return null;
+    updateProvider: (config: Partial<ExchangeRateProvider>) => {
+      set((state) => ({
+        provider: { ...state.provider, ...config },
+        error: null
+      }));
+
+      if (cleanup) {
+        cleanup();
+      }
+      
+      const newConfig = { ...get().provider, ...config };
+      cleanup = setupAutoUpdate(newConfig);
+    },
+
+    reset: () => {
+      if (cleanup) {
+        cleanup();
+      }
+
+      set(initialState);
+
+      cleanup = setupAutoUpdate({
+        name: initialState.provider.name,
+        updateInterval: initialState.config.updateInterval
+      });
     }
-  },
+  };
+});
 
-  // New actions
-  updateManualRate: (rate: number) => {
-    set({ 
-      manualRate: rate,
-      lastUpdate: new Date()
-    });
-    // Add to history
-    get().addToHistory(rate, "manual");
-  },
+// Exportar helpers
+export const updateManualRate = (rate: number) => 
+  useCurrencyStore.getState().updateManualRate(rate);
 
-  updateApiConfig: (config: Partial<ApiConfig>) => {
-    set((state) => ({
-      apiConfig: { ...state.apiConfig, ...config }
-    }));
-  },
+export const updateProvider = (config: Partial<ExchangeRateProvider>) => 
+  useCurrencyStore.getState().updateProvider(config);
 
-  reset: () => set(initialState)
-}));
-
-// Export helper functions to use in components
-export const updateManualRate = (rate: number) => useCurrencyStore.getState().updateManualRate(rate);
-export const updateApiConfig = (config: Partial<ApiConfig>) => useCurrencyStore.getState().updateApiConfig(config);
+// Cleanup en desmontaje
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    useCurrencyStore.getState().reset();
+  });
+}
