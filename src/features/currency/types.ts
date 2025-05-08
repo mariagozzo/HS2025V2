@@ -3,6 +3,8 @@
  * @since 2025-05-08
  * @author mariagozzo
  */
+
+// Tipos Base
 export type CurrencyCode = 
   | 'USD'  // Dólar Estadounidense
   | 'EUR'  // Euro
@@ -13,56 +15,46 @@ export type CurrencyCode =
   | 'CLP'  // Peso Chileno
   | 'ARS'; // Peso Argentino
 
-/**
- * Proveedores de tasas de cambio disponibles
- */
 export type ExchangeRateProviderName = 
   | 'manual'      // Tasas ingresadas manualmente
   | 'bancentralve'// Banco Central de Venezuela
   | 'apilayer';   // API Layer Exchange Rates
 
-/**
- * Información básica de una moneda
- */
+export type DisplayFormat = 'symbol' | 'code' | 'both';
+export type SyncStatus = 'idle' | 'syncing' | 'error';
+
+// Interfaces Base
 export interface Currency {
   code: CurrencyCode;
   name: string;
   symbol: string;
   active: boolean;
-  decimalPlaces?: number; // Número de decimales para formateo
+  decimalPlaces?: number;
 }
 
-/**
- * Tasa de cambio entre dos monedas
- */
 export interface ConversionRate {
   from: CurrencyCode;
   to: CurrencyCode;
   rate: number;
-  timestamp: number; // Unix timestamp
+  timestamp: number;
   source: ExchangeRateProviderName | 'calculated';
 }
 
-/**
- * Resultado de una conversión de moneda
- */
+// Interfaces de Resultados
 export interface ConversionResult {
   amount: number;
   convertedAmount: number;
   rate: number;
   from: CurrencyCode;
   to: CurrencyCode;
-  timestamp: number; // Unix timestamp
-  formattedAmount?: string; // Monto formateado según la moneda
-  formattedConvertedAmount?: string; // Monto convertido formateado
-  provider: ExchangeRateProviderName; // Proveedor usado para la conversión
+  timestamp: number;
+  formattedAmount?: string;
+  formattedConvertedAmount?: string;
+  provider: ExchangeRateProviderName;
 }
 
-/**
- * Entrada en el historial de conversiones
- */
 export interface HistoryEntry {
-  id: string; // UUID para identificación única
+  id: string;
   date: Date;
   from: CurrencyCode;
   to: CurrencyCode;
@@ -70,25 +62,29 @@ export interface HistoryEntry {
   amount?: number;
   convertedAmount?: number;
   source: ExchangeRateProviderName | 'calculated';
-  userId?: string; // ID del usuario que realizó la conversión
+  userId?: string;
 }
 
-/**
- * Configuración para proveedores de tasas de cambio
- */
+// Interfaces de Configuración
 export interface ExchangeRateProvider {
   name: ExchangeRateProviderName;
   apiKey?: string;
   baseUrl?: string;
   headers?: Record<string, string>;
   updateInterval: number;
-  baseCurrency: CurrencyCode; // Moneda base para las conversiones
-  isActive: boolean; // Indica si el proveedor está activo
+  baseCurrency: CurrencyCode;
+  isActive: boolean;
 }
 
-/**
- * Estado global del sistema de monedas
- */
+export interface CurrencyConfig {
+  defaultCurrency: CurrencyCode;
+  updateInterval: number;
+  maxHistoryEntries: number;
+  displayFormat: DisplayFormat;
+  autoUpdate: boolean;
+}
+
+// Estado Principal
 export interface CurrencyState {
   // Datos base
   currencies: Currency[];
@@ -114,18 +110,10 @@ export interface CurrencyState {
   
   // Configuración y providers
   provider: ExchangeRateProvider;
-  config: {
-    defaultCurrency: CurrencyCode;
-    updateInterval: number; // en milisegundos
-    maxHistoryEntries: number;
-    displayFormat: 'symbol' | 'code' | 'both';
-    autoUpdate: boolean;
-  };
+  config: CurrencyConfig;
 }
 
-/**
- * Códigos de error específicos para operaciones de moneda
- */
+// Manejo de Errores
 export type CurrencyErrorCode = 
   | 'INVALID_AMOUNT'
   | 'INVALID_RATE'
@@ -134,9 +122,6 @@ export type CurrencyErrorCode =
   | 'NETWORK_ERROR'
   | 'CONFIG_ERROR';
 
-/**
- * Error personalizado para operaciones de moneda
- */
 export class CurrencyError extends Error {
   constructor(
     message: string,
@@ -148,9 +133,7 @@ export class CurrencyError extends Error {
   }
 }
 
-/**
- * Opciones de formato para montos
- */
+// Interfaces de Formato
 export interface CurrencyFormatOptions {
   locale?: string;
   style?: 'currency' | 'decimal';
@@ -159,20 +142,23 @@ export interface CurrencyFormatOptions {
   useGrouping?: boolean;
 }
 
-/**
- * Estado de sincronización con API externa
- */
+// Estado de Sincronización
 export interface SyncState {
   lastSync: Date | null;
   nextSync: Date | null;
-  status: 'idle' | 'syncing' | 'error';
+  status: SyncStatus;
   error?: string;
   provider: ExchangeRateProviderName;
 }
 
-/**
- * Constantes del sistema
- */
+// Eventos del Sistema
+export type CurrencyEvent = 
+  | { type: 'RATE_UPDATED'; payload: ConversionRate }
+  | { type: 'CONVERSION_COMPLETED'; payload: ConversionResult }
+  | { type: 'PROVIDER_CHANGED'; payload: ExchangeRateProviderName }
+  | { type: 'ERROR_OCCURRED'; payload: CurrencyError };
+
+// Constantes
 export const CURRENCY_CONSTANTS = {
   MAX_HISTORY_ENTRIES: 50,
   DEFAULT_UPDATE_INTERVAL: 300000, // 5 minutos
@@ -186,12 +172,3 @@ export const CURRENCY_CONSTANTS = {
     APILAYER: 'apilayer' as ExchangeRateProviderName
   }
 } as const;
-
-/**
- * Tipo para eventos del sistema de monedas
- */
-export type CurrencyEvent = 
-  | { type: 'RATE_UPDATED'; payload: ConversionRate }
-  | { type: 'CONVERSION_COMPLETED'; payload: ConversionResult }
-  | { type: 'PROVIDER_CHANGED'; payload: ExchangeRateProviderName }
-  | { type: 'ERROR_OCCURRED'; payload: CurrencyError };
