@@ -1,211 +1,252 @@
+import { 
+  ConversionRate, 
+  Currency, 
+  CurrencyCode,
+  ExchangeRateProvider,
+  CurrencyError,
+  CurrencyErrorCode,
+  CURRENCY_CONSTANTS
+} from './types';
 
-import { ConversionRate, Currency, CurrencyCode } from './types';
-
-// Interfaz para la configuración de la API
-export interface CurrencyApiConfig {
-  provider: 'manual' | 'exchangerate' | 'openexchange' | 'bancentralve' | 'apilayer';
-  apiKey?: string;
-  updateInterval: number; // en milisegundos
-  baseCurrency: CurrencyCode;
-  key?: string;
-}
-
-// Monedas disponibles en el sistema
-const mockCurrencies: Currency[] = [
-  { code: 'USD', name: 'Dólar Estadounidense', symbol: '$', active: true },
-  { code: 'EUR', name: 'Euro', symbol: '€', active: true },
-  { code: 'COP', name: 'Peso Colombiano', symbol: '$', active: true },
-  { code: 'VES', name: 'Bolívar Digital', symbol: 'Bs.', active: true },
-  { code: 'PEN', name: 'Sol Peruano', symbol: 'S/.', active: true },
-  { code: 'MXN', name: 'Peso Mexicano', symbol: '$', active: true },
-  { code: 'CLP', name: 'Peso Chileno', symbol: '$', active: true },
-  { code: 'ARS', name: 'Peso Argentino', symbol: '$', active: true }
+/**
+ * Monedas disponibles en el sistema
+ */
+const DEFAULT_CURRENCIES: Currency[] = [
+  { code: 'USD', name: 'Dólar Estadounidense', symbol: '$', active: true, decimalPlaces: 2 },
+  { code: 'EUR', name: 'Euro', symbol: '€', active: true, decimalPlaces: 2 },
+  { code: 'COP', name: 'Peso Colombiano', symbol: '$', active: true, decimalPlaces: 0 },
+  { code: 'VES', name: 'Bolívar Digital', symbol: 'Bs.', active: true, decimalPlaces: 2 },
+  { code: 'PEN', name: 'Sol Peruano', symbol: 'S/.', active: true, decimalPlaces: 2 },
+  { code: 'MXN', name: 'Peso Mexicano', symbol: '$', active: true, decimalPlaces: 2 },
+  { code: 'CLP', name: 'Peso Chileno', symbol: '$', active: true, decimalPlaces: 0 },
+  { code: 'ARS', name: 'Peso Argentino', symbol: '$', active: true, decimalPlaces: 2 }
 ];
 
-// Tasas de cambio entre monedas (datos de ejemplo)
-const mockRates: Record<string, Record<string, number>> = {
-  USD: {
-    EUR: 0.92,
-    COP: 4150.0,
-    VES: 91.50,
-    PEN: 3.85,
-    MXN: 17.25,
-    CLP: 945.50,
-    ARS: 850.25
-  },
-  EUR: {
-    USD: 1.09,
-    COP: 4520.0,
-    VES: 91.50,
-    PEN: 4.19,
-    MXN: 18.80,
-    CLP: 1030.0,
-    ARS: 926.77
-  },
-  // Añadir más tasas según sea necesario
+/**
+ * Tasas de cambio base (USD como moneda base)
+ */
+const BASE_RATES: Record<CurrencyCode, number> = {
+  USD: 1,
+  EUR: 0.92,
+  COP: 4150.0,
+  VES: 91.50,
+  PEN: 3.85,
+  MXN: 17.25,
+  CLP: 945.50,
+  ARS: 850.25
 };
 
 /**
- * Obtiene todas las monedas disponibles en el sistema
- * @returns Promise<Currency[]> Lista de monedas disponibles
+ * Tipo para respuesta de API de tasas
+ */
+interface ExchangeRateResponse {
+  success: boolean;
+  rate?: number;
+  error?: string;
+  timestamp?: number;
+  provider: string;
+}
+
+/**
+ * Cache para tasas de cambio
+ */
+const ratesCache = new Map<string, { rate: number; timestamp: number }>();
+
+/**
+ * Obtiene todas las monedas disponibles
  */
 export async function fetchCurrencies(): Promise<Currency[]> {
   try {
-    // En producción, esto sería una llamada a la API real
-    return new Promise(resolve => {
-      setTimeout(() => resolve(mockCurrencies), 500);
-    });
+    // Simular latencia de red
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return DEFAULT_CURRENCIES;
   } catch (error) {
-    console.error('Error al obtener las monedas:', error);
-    throw new Error('No se pudieron cargar las monedas');
+    throw new CurrencyError(
+      'No se pudieron cargar las monedas',
+      'NETWORK_ERROR' as CurrencyErrorCode,
+      { error }
+    );
   }
 }
 
 /**
- * Obtiene la tasa de cambio entre dos monedas
- * @param from Moneda de origen
- * @param to Moneda de destino
- * @returns Promise<number> Tasa de cambio
+ * Calcula la tasa de cambio entre dos monedas
  */
 export async function fetchConversionRate(
   from: CurrencyCode,
   to: CurrencyCode
 ): Promise<number> {
   try {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Si las monedas son iguales, la tasa es 1
-        if (from === to) {
-          resolve(1);
-          return;
-        }
+    // Verificar monedas iguales
+    if (from === to) return 1;
 
-        // Verificar si existe la tasa directa
-        if (mockRates[from]?.[to]) {
-          resolve(mockRates[from][to]);
-          return;
-        }
+    // Verificar cache
+    const cacheKey = `${from}-${to}`;
+    const cached = ratesCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 300000) { // 5 minutos
+      return cached.rate;
+    }
 
-        // Verificar si existe la tasa inversa
-        if (mockRates[to]?.[from]) {
-          resolve(1 / mockRates[to][from]);
-          return;
-        }
+    // Calcular tasa usando USD como base
+    const fromRate = BASE_RATES[from];
+    const toRate = BASE_RATES[to];
 
-        // Si no hay tasa disponible, intentar conversión a través de USD
-        if (mockRates['USD'][from] && mockRates['USD'][to]) {
-          const throughUSD = mockRates['USD'][to] / mockRates['USD'][from];
-          resolve(throughUSD);
-          return;
-        }
+    if (!fromRate || !toRate) {
+      throw new CurrencyError(
+        `Tasa no disponible para ${from} a ${to}`,
+        'CONVERSION_ERROR' as CurrencyErrorCode,
+        { from, to }
+      );
+    }
 
-        reject(new Error(`No hay tasa de conversión disponible para ${from} a ${to}`));
-      }, 500);
+    const rate = toRate / fromRate;
+
+    // Actualizar cache
+    ratesCache.set(cacheKey, {
+      rate,
+      timestamp: Date.now()
     });
+
+    return rate;
   } catch (error) {
-    console.error('Error al obtener la tasa de cambio:', error);
-    throw error;
+    if (error instanceof CurrencyError) throw error;
+    
+    throw new CurrencyError(
+      'Error al obtener tasa de cambio',
+      'NETWORK_ERROR' as CurrencyErrorCode,
+      { from, to, error }
+    );
   }
 }
 
 /**
- * Obtiene la tasa de cambio desde una API externa
- * @param apiKey Clave de API (para proveedores que la requieren)
- * @param provider Proveedor de tasas de cambio
- * @returns Promise con el resultado de la operación
+ * Obtiene tasas desde API externa
  */
 export async function fetchExchangeRate(
-  apiKey: string, 
-  provider: string
-): Promise<{
-  success: boolean;
-  rate?: number;
-  error?: string;
-  timestamp?: number;
-}> {
+  provider: ExchangeRateProvider
+): Promise<ExchangeRateResponse> {
+  if (!provider.isActive) {
+    throw new CurrencyError(
+      'Proveedor inactivo',
+      'PROVIDER_ERROR' as CurrencyErrorCode,
+      { provider: provider.name }
+    );
+  }
+
   try {
-    // Aquí iría la implementación real según el proveedor
-    switch (provider) {
+    switch (provider.name) {
       case 'bancentralve':
-        // Implementar llamada a API del BCV
-        return {
-          success: true,
-          rate: 36.75,
-          timestamp: Date.now()
-        };
-
+        return await fetchBCVRate(provider);
       case 'apilayer':
-      case 'exchangerate':
-        if (!apiKey) {
-          throw new Error('Se requiere API key para usar este proveedor');
-        }
-        // Implementar llamada a API de apilayer
-        return {
-          success: true,
-          rate: 36.75,
-          timestamp: Date.now()
-        };
-        
-      case 'openexchange':
-        if (!apiKey) {
-          throw new Error('Se requiere API key para usar este proveedor');
-        }
-        // Implementar llamada a API de Open Exchange Rates
-        return {
-          success: true,
-          rate: 36.85,
-          timestamp: Date.now()
-        };
-
+        return await fetchApiLayerRate(provider);
       case 'manual':
         return {
           success: true,
-          rate: mockRates.USD.VES,
-          timestamp: Date.now()
+          rate: BASE_RATES.VES,
+          timestamp: Date.now(),
+          provider: 'manual'
         };
-
       default:
-        throw new Error('Proveedor de tasas de cambio no soportado');
+        throw new CurrencyError(
+          'Proveedor no soportado',
+          'CONFIG_ERROR' as CurrencyErrorCode,
+          { provider: provider.name }
+        );
     }
   } catch (error) {
-    console.error('Error al obtener tasa de cambio:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'No se pudo obtener la tasa de cambio'
+      error: error instanceof Error ? error.message : 'Error desconocido',
+      provider: provider.name
     };
   }
 }
 
 /**
- * Configura la actualización automática de tasas de cambio
- * @param config Configuración para la actualización
- * @returns Función para limpiar el intervalo
+ * Obtiene tasa del BCV
  */
-export function setupAutoUpdate(config: CurrencyApiConfig): () => void {
-  if (config.provider === 'manual' || !config.updateInterval) {
-    return () => {}; // No se necesita limpieza
+async function fetchBCVRate(
+  provider: ExchangeRateProvider
+): Promise<ExchangeRateResponse> {
+  // Implementación real aquí
+  return {
+    success: true,
+    rate: 36.75,
+    timestamp: Date.now(),
+    provider: 'bancentralve'
+  };
+}
+
+/**
+ * Obtiene tasa de ApiLayer
+ */
+async function fetchApiLayerRate(
+  provider: ExchangeRateProvider
+): Promise<ExchangeRateResponse> {
+  if (!provider.apiKey) {
+    throw new CurrencyError(
+      'API Key requerida',
+      'CONFIG_ERROR' as CurrencyErrorCode
+    );
   }
 
+  // Implementación real aquí
+  return {
+    success: true,
+    rate: 36.75,
+    timestamp: Date.now(),
+    provider: 'apilayer'
+  };
+}
+
+/**
+ * Configura actualización automática
+ */
+export function setupAutoUpdate(
+  provider: ExchangeRateProvider
+): () => void {
+  if (!provider.isActive || provider.name === 'manual') {
+    return () => {};
+  }
+
+  let isUpdating = false;
+
   const updateRates = async () => {
+    if (isUpdating) return;
+    
     try {
-      if (config.provider !== 'manual' && config.key) {
-        const result = await fetchExchangeRate(config.key, config.provider);
-        if (result.success && result.rate) {
-          // Aquí se implementaría la actualización de las tasas en el estado global
-          console.log('Tasas actualizadas:', result.rate);
-        }
+      isUpdating = true;
+      const result = await fetchExchangeRate(provider);
+      
+      if (result.success && result.rate) {
+        // Actualizar cache con nueva tasa
+        const cacheKey = `${provider.baseCurrency}-VES`;
+        ratesCache.set(cacheKey, {
+          rate: result.rate,
+          timestamp: Date.now()
+        });
       }
     } catch (error) {
-      console.error('Error en la actualización automática:', error);
+      console.error('Error en actualización automática:', error);
+    } finally {
+      isUpdating = false;
     }
   };
 
-  // Configurar el intervalo de actualización
-  const intervalId = setInterval(updateRates, config.updateInterval);
+  // Configurar intervalo
+  const intervalId = setInterval(
+    updateRates,
+    Math.max(
+      provider.updateInterval,
+      CURRENCY_CONSTANTS.DEFAULT_UPDATE_INTERVAL
+    )
+  );
 
-  // Primera actualización inmediata
+  // Primera actualización
   updateRates();
 
-  // Retornar función de limpieza
-  return () => clearInterval(intervalId);
+  return () => {
+    clearInterval(intervalId);
+    isUpdating = false;
+  };
 }
