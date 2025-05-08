@@ -28,16 +28,20 @@ const ConversionPanel = () => {
   const [conversionAmount, setConversionAmount] = useState<number>(amount || 0);
   
   const handleFromCurrencyChange = (value: string) => {
-    setFromCurrency(value);
+    // Cast the string value to CurrencyCode type since we know it's valid
+    const currencyCode = value as CurrencyCode;
+    setFromCurrency(currencyCode);
     if (toCurrency) {
-      setSelectedCurrencies(value, toCurrency);
+      setSelectedCurrencies(currencyCode, toCurrency);
     }
   };
   
   const handleToCurrencyChange = (value: string) => {
-    setToCurrency(value);
+    // Cast the string value to CurrencyCode type since we know it's valid
+    const currencyCode = value as CurrencyCode;
+    setToCurrency(currencyCode);
     if (fromCurrency) {
-      setSelectedCurrencies(fromCurrency, value);
+      setSelectedCurrencies(fromCurrency, currencyCode);
     }
   };
   
