@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Settings, Database, Users, FileText, Coins, File, FileSearch, 
   LayoutDashboard, Book, ListTodo, Activity, Calendar, ArrowLeft, 
-  ArrowRight, ChevronDown
+  ArrowRight, ChevronDown, Currency
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { cn } from '@/lib/utils';
@@ -87,11 +86,12 @@ const Sidebar = () => {
     {
       title: "Cobros",
       icon: <Coins size={20} />,
-      expanded: false,
+      expanded: location.pathname.startsWith('/cobros'),
       submenu: [
         { title: "Listado de pagos", href: "/cobros/pagos" },
         { title: "Recibos y Cuadre de Caja", href: "/cobros/recibos" },
         { title: "Liquidar vendedores", href: "/cobros/liquidar" },
+        { title: "Gestión de Monedas", href: "/cobros/monedas" },
       ]
     },
     {

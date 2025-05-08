@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import Sidebar from '@/components/admin/Sidebar';
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -9,14 +10,20 @@ interface PageLayoutProps {
 
 const PageLayout: React.FC<PageLayoutProps> = ({ children, title }) => {
   return (
-    <main className="min-h-screen bg-gray-50">
-      {title && (
-        <Helmet>
-          <title>{title} | HubSeguros</title>
-        </Helmet>
-      )}
-      {children}
-    </main>
+    <div className="min-h-screen flex">
+      <Sidebar />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {title && (
+          <Helmet>
+            <title>{title} | HubSeguros</title>
+          </Helmet>
+        )}
+        <main className="flex-1 overflow-y-auto bg-gray-50">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 };
 
