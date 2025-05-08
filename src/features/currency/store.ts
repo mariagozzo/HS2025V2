@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { 
@@ -316,7 +317,12 @@ export const useCurrencyStore = create<ExtendedCurrencyState>()(
 export const updateManualRate = (rate: number) => 
   useCurrencyStore.getState().updateManualRate(rate);
 
+// Add the missing export here
 export const updateProvider = (config: Partial<ExchangeRateProvider>) => 
+  useCurrencyStore.getState().updateProvider(config);
+
+// Export the utility function needed by ConfigPanel
+export const updateApiConfig = (config: Partial<ExchangeRateProvider>) =>
   useCurrencyStore.getState().updateProvider(config);
 
 // Cleanup en desmontaje

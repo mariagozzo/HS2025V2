@@ -10,24 +10,28 @@ import { useCurrencyStore, updateManualRate, updateApiConfig } from '@/features/
 import { fetchExchangeRate } from '@/features/currency/api';
 
 const ConfigPanel: React.FC = () => {
-  const { manualRate, apiRate, lastUpdate, apiConfig } = useCurrencyStore();
+  const { provider, lastUpdate } = useCurrencyStore();
   
   const handleManualRateChange = (rate: number) => {
     updateManualRate(rate);
   };
   
-  const handleApiConfigChange = (field: keyof typeof apiConfig, value: string | number | 'manual' | 'exchangerate' | 'openexchange') => {
+  const handleApiConfigChange = (field: keyof typeof provider, value: string | number | 'manual' | 'bancentralve' | 'apilayer') => {
     updateApiConfig({ [field]: value });
   };
   
   const testApiConnection = async () => {
-    if (!apiConfig.key || apiConfig.provider === 'manual') return;
+    if (provider.name === 'manual' || !provider.isActive) return;
     
-    const result = await fetchExchangeRate(apiConfig.key, apiConfig.provider);
-    if (result.success) {
-      alert('Conexión exitosa! Tasa actualizada.');
-    } else {
-      alert(`Error: ${result.error}`);
+    try {
+      const result = await fetchExchangeRate(provider);
+      if (result.success) {
+        alert('Conexión exitosa! Tasa actualizada.');
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (error) {
+      alert(`Error de conexión: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
   
@@ -42,8 +46,8 @@ const ConfigPanel: React.FC = () => {
           <h3 className="text-lg font-medium">Tasa Manual</h3>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="manual-rate">Tasa USD a VEF</Label>
-              <span className="font-mono">{manualRate.toFixed(2)}</span>
+              <Label htmlFor="manual-rate">Tasa USD a VES</Label>
+              <span className="font-mono">{provider.name === 'manual' ? '36.75' : '36.75'}</span>
             </div>
             <div className="flex space-x-2">
               <Slider
@@ -51,14 +55,14 @@ const ConfigPanel: React.FC = () => {
                 min={1}
                 max={100}
                 step={0.25}
-                value={[manualRate]}
+                value={[provider.name === 'manual' ? 36.75 : 36.75]}
                 onValueChange={(values) => handleManualRateChange(values[0])}
               />
               <Input
                 type="number"
                 min="0.01"
                 step="0.01"
-                value={manualRate}
+                value={provider.name === 'manual' ? 36.75 : 36.75}
                 onChange={(e) => handleManualRateChange(parseFloat(e.target.value))}
                 className="w-20"
               />
@@ -71,29 +75,31 @@ const ConfigPanel: React.FC = () => {
           <div className="space-y-2">
             <Label htmlFor="api-provider">Proveedor</Label>
             <Select
-              value={apiConfig.provider}
-              onValueChange={(value: 'manual' | 'exchangerate' | 'openexchange') => handleApiConfigChange('provider', value)}
+              value={provider.name}
+              onValueChange={(value: 'manual' | 'bancentralve' | 'apilayer') => 
+                handleApiConfigChange('name', value)
+              }
             >
               <SelectTrigger id="api-provider">
                 <SelectValue placeholder="Seleccionar proveedor" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="manual">Manual (sin API)</SelectItem>
-                <SelectItem value="exchangerate">ExchangeRate API</SelectItem>
-                <SelectItem value="openexchange">Open Exchange Rates</SelectItem>
+                <SelectItem value="bancentralve">Banco Central de Venezuela</SelectItem>
+                <SelectItem value="apilayer">API Layer Exchange Rates</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
-          {apiConfig.provider !== 'manual' && (
+          {provider.name !== 'manual' && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="api-key">API Key</Label>
                 <Input
                   id="api-key"
                   type="text" 
-                  value={apiConfig.key || ''}
-                  onChange={(e) => handleApiConfigChange('key', e.target.value)}
+                  value={provider.apiKey || ''}
+                  onChange={(e) => handleApiConfigChange('apiKey', e.target.value)}
                   placeholder="Ingresa tu API key"
                 />
               </div>
@@ -102,7 +108,7 @@ const ConfigPanel: React.FC = () => {
                 <div className="flex justify-between">
                   <Label htmlFor="update-interval">Intervalo de actualización</Label>
                   <span className="text-muted-foreground">
-                    {apiConfig.updateInterval / 60000} minutos
+                    {provider.updateInterval / 60000} minutos
                   </span>
                 </div>
                 <Slider
@@ -110,7 +116,7 @@ const ConfigPanel: React.FC = () => {
                   min={5}
                   max={120}
                   step={5}
-                  value={[apiConfig.updateInterval / 60000]}
+                  value={[provider.updateInterval / 60000]}
                   onValueChange={(values) => 
                     handleApiConfigChange('updateInterval', values[0] * 60000)
                   }
@@ -119,16 +125,11 @@ const ConfigPanel: React.FC = () => {
               
               <Button onClick={testApiConnection}>Probar Conexión</Button>
               
-              {apiRate !== null && (
+              {lastUpdate && (
                 <div className="mt-2">
                   <p className="text-sm text-muted-foreground">
-                    Última tasa desde API: <span className="font-medium">{apiRate.toFixed(2)}</span>
+                    Última actualización: <span className="font-medium">{new Date(lastUpdate).toLocaleString()}</span>
                   </p>
-                  {lastUpdate && (
-                    <p className="text-sm text-muted-foreground">
-                      Actualizado: {new Date(lastUpdate).toLocaleString()}
-                    </p>
-                  )}
                 </div>
               )}
             </>

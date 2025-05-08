@@ -9,13 +9,18 @@ import { useCurrencyStore } from '@/features/currency/store';
 import { setupAutoUpdate } from '@/features/currency/api';
 
 const CurrencyPage = () => {
-  const { apiConfig } = useCurrencyStore();
+  const { provider, fetchCurrencies } = useCurrencyStore();
 
-  // Set up auto-update when the component mounts or apiConfig changes
+  // Fetch currencies when the component mounts
   useEffect(() => {
-    const cleanup = setupAutoUpdate(apiConfig);
+    fetchCurrencies();
+  }, [fetchCurrencies]);
+
+  // Set up auto-update when the component mounts or provider changes
+  useEffect(() => {
+    const cleanup = setupAutoUpdate(provider);
     return cleanup;
-  }, [apiConfig]);
+  }, [provider]);
   
   return (
     <PageLayout title="Gestión de Monedas">
