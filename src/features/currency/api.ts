@@ -177,7 +177,7 @@ async function fetchBCVRate(
   // Implementación real aquí
   return {
     success: true,
-    rate: 36.75,
+    rate: 90.50,
     timestamp: Date.now(),
     provider: 'bancentralve'
   };
@@ -199,7 +199,7 @@ async function fetchApiLayerRate(
   // Implementación real aquí
   return {
     success: true,
-    rate: 36.75,
+    rate: 90.50,
     timestamp: Date.now(),
     provider: 'apilayer'
   };

@@ -18,7 +18,7 @@ export type CurrencyCode =
 export type ExchangeRateProviderName = 
   | 'manual'      // Tasas ingresadas manualmente
   | 'bancentralve'// Banco Central de Venezuela
-  | 'apilayer';   // API Layer Exchange Rates
+  | 'apilayer';   // https://bcv-api.rafnixg.dev/v1/
 
 export type DisplayFormat = 'symbol' | 'code' | 'both';
 export type SyncStatus = 'idle' | 'syncing' | 'error';
