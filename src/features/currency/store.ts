@@ -39,6 +39,9 @@ export const convertCurrency = (request: ConversionRequest): ConversionResult =>
     output = amount / rate;
   }
   
+  // Define source with the correct type
+  const source: 'manual' | 'api' = useApi && apiRate ? 'api' : 'manual';
+  
   // Update history with the correctly typed source
   useCurrencyStore.setState((state) => ({
     history: [
@@ -46,7 +49,7 @@ export const convertCurrency = (request: ConversionRequest): ConversionResult =>
       {
         date: new Date(),
         rate,
-        source: (useApi && apiRate ? 'api' : 'manual') as 'api' | 'manual',
+        source,
       },
     ].slice(-50), // Keep only last 50 entries
   }));
@@ -56,7 +59,7 @@ export const convertCurrency = (request: ConversionRequest): ConversionResult =>
     output,
     rate,
     timestamp: new Date(),
-    source: useApi && apiRate ? 'api' : 'manual',
+    source,
     from,
     to,
   };
