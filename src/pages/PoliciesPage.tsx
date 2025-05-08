@@ -44,8 +44,6 @@ const PoliciesPage = () => {
         <div className="bg-white p-6 rounded-lg shadow">
           <PoliciesList 
             policies={policies || []} 
-            isLoading={isLoading} 
-            error={error} 
             onEdit={(policy) => {
               setSelectedPolicy(policy);
               setShowPolicyForm(true);

@@ -35,8 +35,6 @@ const ClientsPage = () => {
         <div className="bg-white p-6 rounded-lg shadow">
           <ClientsList 
             clients={clients || []} 
-            isLoading={isLoading} 
-            error={error} 
             onDelete={refetch}
           />
         </div>
