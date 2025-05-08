@@ -1,70 +1,64 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import CrudLayout from '@/components/common/crud/CrudLayout';
+import { Helmet } from 'react-helmet-async';
+import PageLayout from '@/components/common/PageLayout';
 import PoliciesList from '@/components/admin/policies/PoliciesList';
-import PolicyFormDialog from '@/components/admin/policies/PolicyFormDialog';
-import { Policy } from '@/types/database';
-import { fromTable } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { fromPolicies } from '@/integrations/supabase/client';
 
 const PoliciesPage = () => {
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
-  
-  const { data: policies, refetch } = useQuery({
+  const [showPolicyForm, setShowPolicyForm] = useState(false);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
+
+  const { data: policies, isLoading, error, refetch } = useQuery({
     queryKey: ['policies'],
     queryFn: async () => {
-      const { data, error } = await fromTable<Policy>('policies')
+      const { data, error } = await fromPolicies()
         .select('*')
         .order('created_at', { ascending: false });
-      
-      if (error) throw error;
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
       return data || [];
-    }
+    },
   });
-  
-  const handleEditPolicy = (policy: Policy) => {
-    setEditingPolicy(policy);
-    setFormOpen(true);
-  };
-  
-  const handleFormClose = () => {
-    setFormOpen(false);
-    setEditingPolicy(null);
-  };
-  
-  const handleFormSuccess = () => {
-    refetch();
-    handleFormClose();
-  };
 
   return (
-    <CrudLayout
-      title="Pólizas"
-      subtitle="Gestione todas las pólizas del sistema"
-      breadcrumbs={[{ text: 'Pólizas' }]}
-      actions={
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Póliza
-        </Button>
-      }
-    >
-      <PoliciesList 
-        policies={policies || []} 
-        onEdit={handleEditPolicy} 
-        onDelete={() => refetch()}
-      />
-      
-      <PolicyFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        policy={editingPolicy}
-        onSuccess={handleFormSuccess}
-      />
-    </CrudLayout>
+    <PageLayout>
+      <Helmet>
+        <title>Pólizas | HubSeguros</title>
+      </Helmet>
+      <div className="container mx-auto py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Pólizas</h1>
+          <Button 
+            className="bg-hubseguros-600 hover:bg-hubseguros-700"
+            onClick={() => {
+              setSelectedPolicy(null);
+              setShowPolicyForm(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" /> Nueva Póliza
+          </Button>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <PoliciesList 
+            policies={policies || []} 
+            isLoading={isLoading} 
+            error={error} 
+            onEdit={(policy) => {
+              setSelectedPolicy(policy);
+              setShowPolicyForm(true);
+            }}
+            refetch={refetch}
+          />
+        </div>
+      </div>
+    </PageLayout>
   );
 };
 

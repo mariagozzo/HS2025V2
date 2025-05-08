@@ -1,70 +1,46 @@
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import CrudLayout from '@/components/common/crud/CrudLayout';
+import React from 'react';
+import { Helmet } from 'react-helmet-async';
+import PageLayout from '@/components/common/PageLayout';
 import ClientsList from '@/components/admin/clients/ClientsList';
-import ClientFormDialog from '@/components/admin/clients/ClientFormDialog';
-import { Client } from '@/types/database';
-import { fromTable } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { fromClients } from '@/integrations/supabase/client';
 
 const ClientsPage = () => {
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
-  
-  const { data: clients, refetch } = useQuery({
+  const { data: clients, isLoading, error } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      const { data, error } = await fromTable<Client>('clients')
+      const { data, error } = await fromClients()
         .select('*')
         .order('last_name', { ascending: true });
-      
-      if (error) throw error;
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
       return data || [];
-    }
+    },
   });
-  
-  const handleEditClient = (client: Client) => {
-    setEditingClient(client);
-    setFormOpen(true);
-  };
-  
-  const handleFormClose = () => {
-    setFormOpen(false);
-    setEditingClient(null);
-  };
-  
-  const handleFormSuccess = () => {
-    refetch();
-    handleFormClose();
-  };
 
   return (
-    <CrudLayout
-      title="Clientes"
-      subtitle="Gestione todos los clientes de su agencia"
-      breadcrumbs={[{ text: 'Clientes' }]}
-      actions={
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Cliente
-        </Button>
-      }
-    >
-      <ClientsList 
-        clients={clients || []} 
-        onEdit={handleEditClient} 
-        onDelete={() => refetch()}
-      />
-      
-      <ClientFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        client={editingClient}
-        onSuccess={handleFormSuccess}
-      />
-    </CrudLayout>
+    <PageLayout>
+      <Helmet>
+        <title>Clientes | HubSeguros</title>
+      </Helmet>
+      <div className="container mx-auto py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Clientes</h1>
+          <Button className="bg-hubseguros-600 hover:bg-hubseguros-700">
+            <Plus className="h-4 w-4 mr-2" /> Nuevo Cliente
+          </Button>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <ClientsList clients={clients || []} isLoading={isLoading} error={error} />
+        </div>
+      </div>
+    </PageLayout>
   );
 };
 

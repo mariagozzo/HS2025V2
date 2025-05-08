@@ -1,225 +1,83 @@
-
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import CrudLayout from '@/components/common/crud/CrudLayout';
-import { fromTable } from '@/integrations/supabase/client';
+import React from 'react';
+import { Helmet } from 'react-helmet-async';
+import PageLayout from '@/components/common/PageLayout';
 import { DataTable } from '@/components/ui/data-table';
-import { ColumnDef } from '@tanstack/react-table';
-import { format } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2 } from 'lucide-react';
-import ConfirmDeleteDialog from '@/components/common/crud/ConfirmDeleteDialog';
-import { useMutation } from '@tanstack/react-query';
-import { toast } from '@/components/ui/use-toast';
-
-// Tipo local para las facturas (no existe en types/database.ts)
-interface Invoice {
-  id: string;
-  invoice_number: string;
-  client_id: string | null;
-  issue_date: string | null;
-  due_date: string | null;
-  amount: number;
-  status: string | null;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { fromInvoices } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/lib/utils';
 
 const InvoicesPage = () => {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
-  
-  const { data: invoices = [], refetch } = useQuery({
+  const { data: invoices, isLoading, error } = useQuery({
     queryKey: ['invoices'],
     queryFn: async () => {
-      const { data, error } = await fromTable<Invoice>('invoices')
+      const { data, error } = await fromInvoices()
         .select('*')
-        .order('issue_date', { ascending: false });
-      
-      if (error) throw error;
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
       return data || [];
-    }
-  });
-  
-  const { data: clients = [] } = useQuery({
-    queryKey: ['clients-for-invoices'],
-    queryFn: async () => {
-      const { data, error } = await fromTable('clients')
-        .select('id, first_name, last_name');
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
-  
-  const deleteInvoiceMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await fromTable('invoices')
-        .delete()
-        .eq('id', id);
-        
-      if (error) throw error;
-      return true;
     },
-    onSuccess: () => {
-      toast({
-        title: "Factura eliminada",
-        description: "La factura ha sido eliminada exitosamente",
-      });
-      setDeleteDialogOpen(false);
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Error al eliminar la factura: ${error.message}`,
-        variant: "destructive",
-      });
-    }
   });
 
-  const handleDeleteClick = (invoice: Invoice) => {
-    setInvoiceToDelete(invoice);
-    setDeleteDialogOpen(true);
-  };
-  
-  const getClientName = (clientId: string | null) => {
-    if (!clientId) return 'N/A';
-    const client = clients.find(c => c.id === clientId);
-    return client ? `${client.first_name} ${client.last_name}` : 'N/A';
-  };
-  
-  const columns: ColumnDef<Invoice>[] = [
+  const columns = [
     {
       accessorKey: 'invoice_number',
-      header: 'N° Factura',
+      header: 'Número de Factura',
     },
     {
-      id: 'client',
+      accessorKey: 'client_id',
       header: 'Cliente',
-      cell: ({ row }) => getClientName(row.original.client_id),
     },
     {
       accessorKey: 'issue_date',
-      header: 'Fecha emisión',
-      cell: ({ row }) => {
-        const date = row.original.issue_date;
-        if (!date) return '-';
-        try {
-          return format(new Date(date), 'dd/MM/yyyy');
-        } catch {
-          return date;
-        }
-      }
+      header: 'Fecha de Emisión',
     },
     {
       accessorKey: 'due_date',
-      header: 'Fecha vencimiento',
-      cell: ({ row }) => {
-        const date = row.original.due_date;
-        if (!date) return '-';
-        try {
-          return format(new Date(date), 'dd/MM/yyyy');
-        } catch {
-          return date;
-        }
-      }
+      header: 'Fecha de Vencimiento',
     },
     {
       accessorKey: 'amount',
       header: 'Monto',
-      cell: ({ row }) => {
-        const amount = row.original.amount;
-        return `$${amount.toLocaleString('es-CO')}`;
-      }
+      cell: ({ row }) => formatCurrency(row.getValue("amount")),
     },
     {
       accessorKey: 'status',
       header: 'Estado',
-      cell: ({ row }) => {
-        const status = row.original.status;
-        if (!status) return '-';
-        
-        let variant: "default" | "secondary" | "destructive" | "outline" = "default";
-        
-        switch (status.toLowerCase()) {
-          case 'pagada':
-            variant = "default";
-            break;
-          case 'vencida':
-            variant = "destructive";
-            break;
-          case 'pendiente':
-            variant = "secondary";
-            break;
-          default:
-            variant = "outline";
-        }
-        
-        return <Badge variant={variant}>{status}</Badge>;
-      }
     },
     {
-      id: 'actions',
-      header: 'Acciones',
-      cell: ({ row }) => {
-        const invoice = row.original;
-        return (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {/* TODO: Implement edit invoice */}}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDeleteClick(invoice)}
-            >
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </Button>
-          </div>
-        );
-      },
+      accessorKey: 'description',
+      header: 'Descripción',
     },
   ];
 
   return (
-    <CrudLayout
-      title="Facturas"
-      subtitle="Gestione todas las facturas del sistema"
-      breadcrumbs={[{ text: 'Facturas' }]}
-      actions={
-        <Button onClick={() => {/* TODO: Implement create invoice */}}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Factura
-        </Button>
-      }
-    >
-      <DataTable 
-        columns={columns} 
-        data={invoices} 
-        searchKey="invoice_number" 
-        searchPlaceholder="Buscar por número de factura..."
-      />
-      
-      {invoiceToDelete && (
-        <ConfirmDeleteDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          title="Confirmar Eliminación"
-          description="¿Está seguro que desea eliminar la factura"
-          itemIdentifier={invoiceToDelete.invoice_number}
-          isDeleting={deleteInvoiceMutation.isPending}
-          onDelete={() => deleteInvoiceMutation.mutate(invoiceToDelete.id)}
-        />
-      )}
-    </CrudLayout>
+    <PageLayout>
+      <Helmet>
+        <title>Facturas | HubSeguros</title>
+      </Helmet>
+      <div className="container mx-auto py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Facturas</h1>
+          <Button className="bg-hubseguros-600 hover:bg-hubseguros-700">
+            <Plus className="h-4 w-4 mr-2" /> Nueva Factura
+          </Button>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <DataTable 
+            columns={columns} 
+            data={invoices || []} 
+            searchKey="invoice_number"
+            searchPlaceholder="Buscar por número..."
+          />
+        </div>
+      </div>
+    </PageLayout>
   );
 };
 

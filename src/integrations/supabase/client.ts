@@ -12,21 +12,21 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Create an untyped client that can be used directly when types are not important
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Helper function that works around type issues by using any
+// Helper function that works around type issues using type assertion
 export const fromTable = (tableName: string) => {
-  return supabase.from(tableName) as any;
+  return supabase.from(tableName as never) as any;
 };
 
-// Helper for specific tables with any type to overcome type checking issues
-export const fromPolicies = () => supabase.from('policies') as any;
-export const fromClients = () => supabase.from('clients') as any;
-export const fromTasks = () => supabase.from('tasks') as any;
-export const fromPayments = () => supabase.from('payments') as any;
-export const fromClaims = () => supabase.from('claims') as any;
-export const fromInvoices = () => supabase.from('invoices') as any;
-export const fromInsuranceCompanies = () => supabase.from('insurance_companies') as any;
-export const fromInsuranceBranches = () => supabase.from('insurance_branches') as any;
-export const fromUsersProfiles = () => supabase.from('users_profiles') as any;
+// Helper for specific tables with explicit type casting to overcome type checking issues
+export const fromPolicies = () => supabase.from('policies' as never) as any;
+export const fromClients = () => supabase.from('clients' as never) as any;
+export const fromTasks = () => supabase.from('tasks' as never) as any;
+export const fromPayments = () => supabase.from('payments' as never) as any;
+export const fromClaims = () => supabase.from('claims' as never) as any;
+export const fromInvoices = () => supabase.from('invoices' as never) as any;
+export const fromInsuranceCompanies = () => supabase.from('insurance_companies' as never) as any;
+export const fromInsuranceBranches = () => supabase.from('insurance_branches' as never) as any;
+export const fromUsersProfiles = () => supabase.from('users_profiles' as never) as any;
 
 // Funciones auxiliares para operaciones comunes
 export const countRecords = async (tableName: string, condition?: {column: string, value: any}) => {

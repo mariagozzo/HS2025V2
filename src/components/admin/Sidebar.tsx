@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Settings, Database, Users, FileText, Coins, File, FileSearch, 
   LayoutDashboard, Book, ListTodo, Activity, Calendar, ArrowLeft, 
@@ -22,6 +22,7 @@ type MenuCategory = {
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
   const [categories, setCategories] = useState<MenuCategory[]>([
     {
       title: "Dashboard",
@@ -96,7 +97,7 @@ const Sidebar = () => {
     {
       title: "Informes",
       icon: <File size={20} />,
-      expanded: false,
+      expanded: location.pathname.startsWith('/informes'),
       submenu: [
         { title: "Informes generales", href: "/informes/generales" },
       ]
@@ -151,6 +152,11 @@ const Sidebar = () => {
     setCategories(newCategories);
   };
 
+  // Helper to check if a menu item is active
+  const isActive = (href: string) => {
+    return location.pathname === href || location.pathname.startsWith(href + '/');
+  };
+
   return (
     <aside className={cn(
       "bg-sidebar h-screen flex flex-col transition-all border-r",
@@ -185,6 +191,7 @@ const Sidebar = () => {
                   to={category.href}
                   className={cn(
                     "flex items-center py-2 px-3 rounded-md hover:bg-gray-800 text-gray-200",
+                    isActive(category.href) && "bg-gray-800 text-white",
                     collapsed ? "justify-center" : "justify-between"
                   )}
                 >
@@ -199,6 +206,7 @@ const Sidebar = () => {
                     onClick={() => toggleSubmenu(index)}
                     className={cn(
                       "w-full flex items-center py-2 px-3 rounded-md hover:bg-gray-800 text-gray-200",
+                      category.submenu?.some(item => isActive(item.href)) && "bg-gray-800 text-white",
                       collapsed ? "justify-center" : "justify-between"
                     )}
                   >
@@ -222,7 +230,10 @@ const Sidebar = () => {
                         <Link
                           key={itemIndex}
                           to={item.href}
-                          className="block py-1.5 px-3 rounded-md text-sm text-gray-400 hover:text-white hover:bg-gray-800"
+                          className={cn(
+                            "block py-1.5 px-3 rounded-md text-sm text-gray-400 hover:text-white hover:bg-gray-800",
+                            isActive(item.href) && "bg-gray-800 text-white"
+                          )}
                         >
                           {item.title}
                         </Link>
