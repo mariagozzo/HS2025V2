@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/2c689b1a-06ff-4341-abb4-689735e23994
+**URL**: https://lovable.dev/projects/315697c9-550b-4cb8-b63b-f6411d2a264a
 
 ## How can I edit this code?
 
@@ -10,7 +10,7 @@ There are several ways of editing your application.
 
 **Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2c689b1a-06ff-4341-abb4-689735e23994) and start prompting.
+Simply visit the [Lovable Project](https://lovable.dev/projects/315697c9-550b-4cb8-b63b-f6411d2a264a) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
 
@@ -24,10 +24,10 @@ Follow these steps:
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/Hubdeseguros/hubdeseguros-v1.git
 
 # Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+cd hubdeseguros-v1
 
 # Step 3: Install the necessary dependencies.
 npm i
@@ -62,7 +62,7 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/2c689b1a-06ff-4341-abb4-689735e23994) and click on Share -> Publish.
+Simply open [Lovable] and click on Share -> Publish.
 
 ## Can I connect a custom domain to my Lovable project?
 
@@ -71,3 +71,21 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Sincronización Automática del Repositorio
+
+Para facilitar la sincronización del repositorio con GitHub, se ha creado un script de automatización:
+
+1. El script `sync-repo.sh` permite sincronizar todos los cambios en un solo paso
+2. Uso: `./sync-repo.sh "Mensaje del commit"`
+
+Ejemplo:
+```bash
+./sync-repo.sh "Actualización del módulo de login"
+```
+
+Este script realiza las siguientes acciones:
+- Actualiza tu repositorio local (git pull)
+- Agrega todos tus cambios (git add .)
+- Realiza el commit con tu mensaje
+- Sube los cambios a GitHub
