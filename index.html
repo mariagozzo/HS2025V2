@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hub de Seguros</title>
-    <link rel="stylesheet" href="/assets/index.css">
-    <meta name="twitter:site" content="@hubseguros" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <script>
+      window.VITE_API_URL = import.meta.env.VITE_API_URL
+      window.VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+      window.VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/assets/main.js"></script>
+    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

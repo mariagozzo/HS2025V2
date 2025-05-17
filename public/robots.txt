@@ -12,3 +12,33 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+
+Sitemap: /sitemap.xml
+
+# Crawling Frequency
+Crawl-delay: 10
+
+# Host Information
+Host: https://hubdeseguros.com
+
+# Security
+X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noodp, noimageindex
+
+# Mobile
+User-agent: Googlebot-Mobile
+Allow: /
+
+# Images
+User-agent: Googlebot-Image
+Allow: /images/
+
+# Ads
+User-agent: Mediapartners-Google
+Allow: /
+
+# Social
+User-agent: FacebookExternalHit
+Allow: /
