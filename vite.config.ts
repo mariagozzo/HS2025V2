@@ -22,10 +22,12 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    manifest: true,
     rollupOptions: {
       input: {
         main: './index.html'
-      }
+      },
+      external: ['react', 'react-dom']
     }
   },
 }));
