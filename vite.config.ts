@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-  base: '/',
+  base: '/HS2025V2/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -43,7 +43,7 @@ export default defineConfig({
   publicDir: 'public',
   assetsInclude: ['**/*.css', '**/*.js', '**/*.png', '**/*.jpg', '**/*.svg'],
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom']
+    include: ['react', 'react-dom', 'react/jsx-runtime']
   },
   css: {
     modules: {
