@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/HS2025V2/',
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',
+    assetsDir: '.',
     manifest: true,
     rollupOptions: {
       input: {
