@@ -6,25 +6,18 @@ export default defineConfig({
   base: '/HS2025V2/',
   build: {
     outDir: 'dist',
-    assetsDir: '.',
+    assetsDir: 'assets',
     manifest: true,
     rollupOptions: {
-      input: {
-        main: './src/index.tsx'
-      },
+      input: './src/main.tsx',
       output: {
-        entryFileNames: `assets/[name].js`,
-        chunkFileNames: `assets/[name].js`,
-        assetFileNames: `assets/[name].[ext]`
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     },
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
-      }
-    },
-    minify: 'terser'
+    minify: 'terser',
+    sourcemap: false
   },
   plugins: [react()],
   resolve: {
@@ -43,7 +36,7 @@ export default defineConfig({
   publicDir: 'public',
   assetsInclude: ['**/*.css', '**/*.js', '**/*.png', '**/*.jpg', '**/*.svg'],
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react/jsx-runtime']
+    include: ['react', 'react-dom']
   },
   css: {
     modules: {
