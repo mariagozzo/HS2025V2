@@ -27,7 +27,15 @@ export default defineConfig(({ mode }) => ({
       input: {
         main: './index.html'
       },
-      external: ['react', 'react-dom']
+      output: {
+        entryFileNames: `assets/[name].js`,
+        chunkFileNames: `assets/[name].js`,
+        assetFileNames: `assets/[name].[ext]`
+      }
     }
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom']
+  },
+  publicDir: 'public'
 }));

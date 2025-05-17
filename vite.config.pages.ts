@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react-swc';
 import path from 'path';
 
 export default defineConfig({
-  base: '/HS2025V2/',
+  base: '/',
   server: {
     host: '::',
     port: 8080,
@@ -23,10 +23,13 @@ export default defineConfig({
         main: './index.html'
       },
       output: {
-        entryFileNames: `assets/[name].js`,
-        chunkFileNames: `assets/[name].js`,
-        assetFileNames: `assets/[name].[ext]`
+        entryFileNames: `[name].js`,
+        chunkFileNames: `[name].js`,
+        assetFileNames: `[name].[ext]`
       }
     }
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom']
   }
 });

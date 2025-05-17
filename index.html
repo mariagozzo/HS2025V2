@@ -16,6 +16,9 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
+    <script>
+  const base = window.location.pathname.includes('HS2025V2') ? '/HS2025V2/' : '/';
+  document.write(`<script type="module" src="${base}assets/main.js"><\/script>`);
+</script>
   </body>
 </html>
