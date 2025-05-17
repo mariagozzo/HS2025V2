@@ -43,10 +43,18 @@ if [ -n "$(git status --porcelain)" ]; then
     fi
     
     # Push los cambios
-    echo "Pushing changes..."
+    echo "Pushing changes to main branch..."
     git push origin main
     if [ $? -ne 0 ]; then
-        echo "Error during push. Please check your Git credentials and try again."
+        echo "Error during push to main branch. Please check your Git credentials and try again."
+        exit 1
+    fi
+
+    # Sincronizar con GitHub Pages
+    echo "Synchronizing with GitHub Pages..."
+    ./sync-gh-pages.sh "Automatic sync to GitHub Pages: $(date)"
+    if [ $? -ne 0 ]; then
+        echo "Error during GitHub Pages sync. Please check your GitHub token and try again."
         exit 1
     fi
 else
